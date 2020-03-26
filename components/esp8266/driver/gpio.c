@@ -324,7 +324,7 @@ esp_err_t gpio_config(const gpio_config_t *gpio_cfg)
             }
 
             ESP_LOGI(GPIO_TAG, "GPIO[%d]| InputEn: %d| OutputEn: %d| OpenDrain: %d| Pullup: %d| Pulldown: %d| Intr:%d ", io_num, input_en, output_en, od_en, pu_en, pd_en, gpio_cfg->intr_type);
-
+            printf("io_num:%d",io_num);
             if (!RTC_GPIO_IS_VALID_GPIO(io_num)) {
                 gpio_set_intr_type(io_num, gpio_cfg->intr_type);
             }
@@ -343,10 +343,10 @@ esp_err_t gpio_config(const gpio_config_t *gpio_cfg)
 
             WRITE_PERI_REG(GPIO_PIN_REG(io_num), pin_reg.val);
         }
-
+        // printf("GPIO_PIN_COUNT:%d",GPIO_PIN_COUNT);
         io_num++;
     } while (io_num < GPIO_PIN_COUNT);
-
+    printf("OK\n");
     return ESP_OK;
 }
 

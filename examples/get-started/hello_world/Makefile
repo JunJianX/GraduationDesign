@@ -4,6 +4,6 @@
 #
 
 PROJECT_NAME := hello-world
-
+IDF_PATH := /home/xu/esp/ESP8266_RTOS_SDK
 include $(IDF_PATH)/make/project.mk
 

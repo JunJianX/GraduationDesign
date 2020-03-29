@@ -17,13 +17,20 @@
 #include "font.h"
 
 #define uchar unsigned char
-
+uint16_t adc_data[20];
 void display()
 {
-        
+        char s_adc[20]="";
+        sprintf(s_adc,"ADC:%d",adc_data[0]);
+        // dsp_single_colour(BLACK);
         vTaskDelay(1000/portTICK_PERIOD_MS);
         Display_ASCII8X16(0,0, "  Sun Yuhong, ",WHITE);
         Display_ASCII8X16(0,16,"   I LOVE U!",WHITE);
+        // Display_ASCII8X16(0,32,"           ",BLACK);
+        
+        Draw_any_color(32,32,64,12,BLACK);
+        Display_ASCII8X16(0,32,s_adc,WHITE);
+
         /* PutPixel(64,64,RED);
          PutPixel(64,65,RED);
          PutPixel(64,66,RED);
@@ -31,12 +38,14 @@ void display()
          PutPixel(64,68,RED);*/
 }
 
+
 void app_main()
 {
 
-    int i=0;
+    int i=0,j=0;
+
     TickType_t now_tick;
-    uint16_t adc_data[20];
+    
     printf("Hello world!\n");
 
     /* Print chip information */
@@ -66,18 +75,26 @@ void app_main()
     // now_tick=xTaskGetTickCount();
     // vTaskDelayUntil(now_tick,500);
     dsp_single_colour(BLACK);
+    vTaskDelay(1000/portTICK_PERIOD_MS);
+    // Display_Image(0,0,128,128,gImage_image);
     while (1)
     {
         i++;
-        if(i==1000)
+        if(i==10000)
         {
             i=0;
-            display();
-            if (ESP_OK == adc_read(&adc_data[0])) {
-                printf("%d\n",adc_data[0]);
-            }
-
-            // Display_Image(0,0,128,128,gImage_image);
+            // display();
+            
+            // j++;
+            // if(j==10)
+            // {
+            //     j=0;
+                // if (ESP_OK == adc_read(&adc_data[0])) {
+                // printf("%d\n",adc_data[0]);
+                // }
+            // }
+            Display_Image(0,0,128,128,gImage_image);
+            vTaskDelay(10000/portTICK_PERIOD_MS);
         }
 
         

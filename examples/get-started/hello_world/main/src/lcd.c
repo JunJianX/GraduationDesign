@@ -15,7 +15,7 @@
 #include "font.h"
 
 
-#define USE_LANDSCAPE
+// #define USE_LANDSCAPE
 
 //±¾²âÊÔ³ÌÐòÊ¹ÓÃµÄÊÇÄ£ÄâSPI½Ó¿ÚÇý¶¯
 //¿É×ÔÓÉ¸ü¸Ä½Ó¿ÚIOÅäÖÃ£¬Ê¹ÓÃÈÎÒâ×îÉÙ4 IO¼´¿ÉÍê³É±¾¿îÒº¾§Çý¶¯ÏÔÊ¾
@@ -273,7 +273,17 @@ void PutPixel(uint x_start,uint y_start,uint color)
 	
 }
 
+void Draw_any_color(uint x,uint y,uint width,uint height,int color)
+{
+	uchar i,j;
+	// x=64;y=64;
+	// width=32;height=32;
+	Lcd_SetRegion(x,y,x+width-1,y+height-1);
+	for(i=0;i<width;i++)
+		for(j =0;j<height;j++)
+			PutPixel(x+i,y+j,color);
 
+}
 
 void dsp_single_colour(int color)
 {
@@ -308,11 +318,17 @@ void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 			qm = *(s+i);
 
 			ulOffset = (long int)(qm) * 16;
-			printf("qm is :%d\n",qm);
+			// printf("qm is :%d\n",qm);
 			for (j = 0; j < 16; j ++)
 			{
 						ywbuf[j]=Zk_ASCII8X16[ulOffset+j];
 			}
+			if(s[i]==' ')
+			printf("blank's index is %ld",ulOffset);
+			if(s[i]=='S')
+			printf("\nS index is %ld\n",ulOffset);
+			if(s[i]=='u')
+			printf("\nu index is %ld\n",ulOffset);
 			// printf("LCD_Display_ASCII8X162---------------------------------\n");		
 			for(y = 0;y < 16;y++)
 			{
@@ -336,18 +352,28 @@ void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 
 
 
-void Display_Image(uint x0,uint y0,uint width,uint height,char *s)
+void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Image(0,0,128,128,gImage_image);
 {
+	long int max=0;long int i_max;
+	
 	Lcd_SetRegion(x0,y0,x0+width-1,y0+height-1);
-	uchar i,j;
+	uint i,j;
 	uint color;
+
 	for(i=0;i<width;i++)
 	{
 		for(j = 0;j<height;j++)
 		{
 			color=0;
-			color= (  (s[i*width+j]<<8)  |  s[i*width+j+1]   );
+			color= (  (s[((i*width)<<1)+(j<<1)+1] )  | ( s[(i*width+j+1)<<1]<<8)  );
 			LCD_WriteData_16Bit(color);
+			if(max<i*width+j)
+				max = i*width+j;
+			// PutPixel(x0+i,y0+j,color);
+			// printf("\t(%d)\t",i*width+j);
 		}
+		
 	}
+	printf("\n\t(%ld)\t\n",max);
+	printf("\n\t The max i is(%d)\t\n",i);
 }

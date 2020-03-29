@@ -52,12 +52,26 @@ static void on_got_ip(void *arg, esp_event_base_t event_base,
     xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
 }
 
+static esp_err_t My_wifi_init(system_event_t *event,void *ctx)
+{
+    switch(event->event_id)
+    {
+        case SYSTEM_EVENT_STA_START: 
+        case SYSTEM_EVENT_STA_GOT_IP:
+        case SYSTEM_EVENT_STA_DISCONNECTED:
+        default:break;
+
+    }
+    return ESP_OK;
+}
+
 static void initialise_wifi(void)
 {
     tcpip_adapter_init();
     wifi_event_group = xEventGroupCreate();
 
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    // ESP_ERROR_CHECK(esp_event_loop_create_default());
+    ESP_ERROR_CHECK(esp_event_loop_init(My_wifi_init,NULL));
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
@@ -138,5 +152,6 @@ void app_main()
 {
     ESP_ERROR_CHECK( nvs_flash_init() );
     initialise_wifi();
+    // xTaskCreate();
 }
 

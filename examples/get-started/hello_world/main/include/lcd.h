@@ -66,7 +66,7 @@ void  PutPixel(uint x_start,uint y_start,uint color);
 void  dsp_single_colour(int color);
 void  Display_ASCII8X16(uint x0,uint y0,char *s,uint color);
 void  Display_Image(uint x0,uint y0,uint width,uint height,char *s);
-
+void  Draw_any_color(uint x,uint y,uint width,uint height,int color);
 #endif
 
 

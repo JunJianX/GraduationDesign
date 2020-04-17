@@ -22,6 +22,8 @@
 #include "smartconfig_ack.h"
 #include "my_tools.h"
 #include "my_sntp.h"
+#include "my_uart.h"
+#include "my_ota.h"
 // #include "test.h"
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
@@ -290,11 +292,12 @@ void app_main()
     }
 
     ESP_ERROR_CHECK(err);
-    printf("app_main1111111111111111111\n");
-    
-    printf("app_main2222222222222222222\n");
+
+    my_uart_init();
+    xTaskCreate(&uart_event_task,"uart_event_task", 1024, NULL, 8, NULL); 
     // xTaskCreate();
 
+    
     passwd = malloc(64+1);
     ssid = malloc(32+1);
 

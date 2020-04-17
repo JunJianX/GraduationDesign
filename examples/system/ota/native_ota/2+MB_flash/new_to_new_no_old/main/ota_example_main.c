@@ -160,8 +160,21 @@ bool _esp_ota_firm_parse_http(esp_ota_firm_t *ota_firm, const char *text, size_t
     }
 
     return false;
-}
+}/*
+//esp_ota_firm_parse_msg(&ota_firm, text, buff_len);
+static void esp_ota_firm_parse_msg(esp_ota_firm_t *ota_firm, const char *in_buf, size_t in_len)
+{
+    size_t parse_bytes = 0;
 
+    ESP_LOGD(TAG, "Input %d bytes", in_len);
+
+    do {
+        size_t bytes = esp_ota_firm_do_parse_msg(ota_firm, in_buf + parse_bytes, in_len - parse_bytes);
+        ESP_LOGD(TAG, "Parse %d bytes", bytes);
+        if (bytes)
+            parse_bytes += bytes;
+    } while (parse_bytes != in_len);
+}*/
 static size_t esp_ota_firm_do_parse_msg(esp_ota_firm_t *ota_firm, const char *in_buf, size_t in_len)
 {
     size_t tmp;
@@ -214,7 +227,7 @@ static size_t esp_ota_firm_do_parse_msg(esp_ota_firm_t *ota_firm, const char *in
 
     return parsed_bytes;
 }
-
+//esp_ota_firm_parse_msg(&ota_firm, text, buff_len);
 static void esp_ota_firm_parse_msg(esp_ota_firm_t *ota_firm, const char *in_buf, size_t in_len)
 {
     size_t parse_bytes = 0;

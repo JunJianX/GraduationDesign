@@ -33,8 +33,10 @@
 
 static EventGroupHandle_t s_connect_event_group;
 static ip4_addr_t s_ip_addr;
-static char s_connection_name[32] = CONFIG_EXAMPLE_WIFI_SSID;
-static char s_connection_passwd[32] = CONFIG_EXAMPLE_WIFI_PASSWORD;
+// static char s_connection_name[32] = CONFIG_EXAMPLE_WIFI_SSID;
+// static char s_connection_passwd[32] = CONFIG_EXAMPLE_WIFI_PASSWORD;
+static char s_connection_name[32] = "My_WiFi";
+static char s_connection_passwd[32] = "17806334985";
 
 #ifdef CONFIG_EXAMPLE_CONNECT_IPV6
 static ip6_addr_t s_ipv6_addr;
@@ -101,7 +103,8 @@ static void start(void)
     strncpy((char *)&wifi_config.sta.ssid, s_connection_name, 32);
     strncpy((char *)&wifi_config.sta.password, s_connection_passwd, 32);
 
-    ESP_LOGI(TAG, "Connecting to %s...", wifi_config.sta.ssid);
+    ESP_LOGI(TAG, "Connecting to %s", wifi_config.sta.ssid);
+    ESP_LOGI(TAG, "Password to %s", wifi_config.sta.password);
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());

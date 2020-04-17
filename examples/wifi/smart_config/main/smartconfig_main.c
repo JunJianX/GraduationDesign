@@ -20,16 +20,22 @@
 #include "tcpip_adapter.h"
 #include "esp_smartconfig.h"
 #include "smartconfig_ack.h"
+#include "my_tools.h"
+#include "my_sntp.h"
+// #include "test.h"
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t wifi_event_group;
-
+int WiFi_Init_Or_Not=0;
 /* The event group allows multiple bits for each event,
    but we only care about one event - are we connected
    to the AP with an IP? */
 static const int CONNECTED_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
+
+char *passwd=NULL;
+char *ssid=NULL;
 
 void smartconfig_example_task(void * parm);
 
@@ -52,19 +58,41 @@ static void on_got_ip(void *arg, esp_event_base_t event_base,
     xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
 }
 
-static esp_err_t My_wifi_init(system_event_t *event,void *ctx)
+static esp_err_t My_wifi_init(void *ctx,system_event_t *event)
 {
     switch(event->event_id)
     {
         case SYSTEM_EVENT_STA_START: 
+            printf("SYSTEM_EVENT_STA_START\n");
+            if(WiFi_Init_Or_Not==1)
+            {
+
+            }
+            else if(WiFi_Init_Or_Not ==0 )
+            {
+                xTaskCreate(&smartconfig_example_task,"smartconfig_example_task", 1024+1024, NULL, 7, NULL);break;
+            }
+            // xTaskCreate(&smartconfig_example_task,"smartconfig_example_task", 1024+1024, NULL, 7, NULL);break;
+        
         case SYSTEM_EVENT_STA_GOT_IP:
+            printf("---------------------\n");
+            printf("GOT IP!\n");
+            printf("start sntp!");
+            // xTaskCreate(&sntp_example_task,"sntp_example_task", 1024+1024, NULL, 7, NULL);break;
+            printf("---------------------\n");
+
+            break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
+            printf("---------------------\n");
+            printf("DISCONNECTED!\n");
+            printf("---------------------\n");
+            break;
         default:break;
 
     }
     return ESP_OK;
 }
-
+/*
 static void initialise_wifi(void)
 {
     tcpip_adapter_init();
@@ -72,15 +100,49 @@ static void initialise_wifi(void)
 
     // ESP_ERROR_CHECK(esp_event_loop_create_default());
     ESP_ERROR_CHECK(esp_event_loop_init(My_wifi_init,NULL));
-
+    printf("222222222222222222\n");
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 
     ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &on_wifi_disconnect, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &on_got_ip, NULL));
-
+    
     ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+    // wifi_config_t wifi_config = {
+    //     .sta = {
+    //         .ssid = "zhe_tian_xia_dou_shi_zhen_de",
+    //         .password = "17806334985"
+    //     },
+    // };
+    
+    // ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA,&wifi_config));
+    ESP_ERROR_CHECK( esp_wifi_start() );
+    ESP_ERROR_CHECK( esp_wifi_connect() );
+}*/
+static void initialise_wifi(void)
+{
+    tcpip_adapter_init();
+    wifi_event_group = xEventGroupCreate();
+    
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+
+    ESP_ERROR_CHECK( esp_event_loop_init(My_wifi_init, NULL) );
+    wifi_config_t config;
+    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+
+
+    if(WiFi_Init_Or_Not==1)
+    {
+        memset(&config,0,(sizeof(config)));
+        memcpy(config.sta.ssid,ssid,(strlen(ssid)));
+        memcpy(config.sta.password,passwd,(strlen(passwd)));
+    
+        printf("config read is:%s\n", config.sta.ssid);
+        printf("config read is:%s\n", config.sta.password);
+        ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
+    }
+    
     ESP_ERROR_CHECK( esp_wifi_start() );
     ESP_ERROR_CHECK( esp_wifi_connect() );
 }
@@ -102,6 +164,8 @@ static void sc_callback(smartconfig_status_t status, void *pdata)
             wifi_config_t *wifi_config = pdata;
             ESP_LOGI(TAG, "SSID:%s", wifi_config->sta.ssid);
             ESP_LOGI(TAG, "PASSWORD:%s", wifi_config->sta.password);
+            /*Save SSID and PASSWORD.*/
+            Save_ssid_passwd( (char*)(wifi_config->sta.ssid),(char*)(wifi_config->sta.password));
             ESP_ERROR_CHECK( esp_wifi_disconnect() );
             ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, wifi_config) );
             ESP_ERROR_CHECK( esp_wifi_connect() );
@@ -133,7 +197,7 @@ static void sc_callback(smartconfig_status_t status, void *pdata)
 void smartconfig_example_task(void * parm)
 {
     EventBits_t uxBits;
-    ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH_AIRKISS) );
+    ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH) );
     ESP_ERROR_CHECK( esp_smartconfig_start(sc_callback) );
     while (1) {
         uxBits = xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT | ESPTOUCH_DONE_BIT, true, false, portMAX_DELAY); 
@@ -143,15 +207,93 @@ void smartconfig_example_task(void * parm)
         if(uxBits & ESPTOUCH_DONE_BIT) {
             ESP_LOGI(TAG, "smartconfig over");
             esp_smartconfig_stop();
+            ESP_LOGI(TAG, "smartconfig task DELETE!");
             vTaskDelete(NULL);
         }
     }
 }
+/*
+static void connect_ap(char *apName, char *apPassword)
+{
+    
+    tcpip_adapter_init();
+    wifi_event_group = xEventGroupCreate();
+    
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+
+    ESP_ERROR_CHECK( esp_event_loop_init(My_wifi_init, NULL) );
+    wifi_config_t config;
+    
+ 
+    
+    
+    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
+    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+
+
+    if(WiFi_Init_Or_Not==1)
+    {
+        memset(&config,0,(sizeof(config)));
+        memcpy(config.sta.ssid,apName,(strlen(apName)));
+        memcpy(config.sta.password,apPassword,(strlen(apPassword)));
+    
+        printf("config read is:%s\n", config.sta.ssid);
+        printf("config read is:%s\n", config.sta.password);
+    }
+    ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
+    ESP_ERROR_CHECK( esp_wifi_start() );
+
+}*/
 
 void app_main()
 {
-    ESP_ERROR_CHECK( nvs_flash_init() );
-    initialise_wifi();
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        err = nvs_flash_init();
+    }
+
+    ESP_ERROR_CHECK(err);
+    printf("app_main1111111111111111111\n");
+    
+    printf("app_main2222222222222222222\n");
     // xTaskCreate();
+
+    passwd = malloc(64+1);
+    ssid = malloc(32+1);
+
+    memset(passwd,0,64+1);
+    memset(ssid,0,32+1);
+    
+
+    /*if(Read_ssid_passwd(ssid,passwd)==0)
+    {
+        connect_ap(ssid, passwd);
+        printf("Read passwd&&ssid sccucessful!!\n");
+    } 
+    else 
+    {
+        printf("Read passwd&&ssid failed !!\n");
+        initialise_wifi();
+    }*/
+
+    if(Read_ssid_passwd(ssid,passwd)==0)
+    {
+        printf("Read passwd&&ssid sccucessful!!\n");
+        WiFi_Init_Or_Not =1;
+
+    }
+    else
+    {
+        printf("Read passwd&&ssid failed !!\n");
+        WiFi_Init_Or_Not = 0;
+    }
+    initialise_wifi();
+    while(1)
+    {
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
+
+
 }
 

@@ -17,11 +17,11 @@ static void obtain_time(void)
     // wait for time to be set
     time_t now = 0;
     struct tm timeinfo = { 0 };
-    int retry = 0;
-    const int retry_count = 10;
+    // int retry = 0;
+    // const int retry_count = 10;
 
-    while (timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
-        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
+    while (timeinfo.tm_year < (2016 - 1900) /*&& ++retry < retry_count*/) {
+        printf( "Waiting for system time to be set... \n");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         time(&now);
         localtime_r(&now, &timeinfo);
@@ -59,9 +59,12 @@ void sntp_example_task(void *arg)
         if (timeinfo.tm_year < (2016 - 1900)) {
             ESP_LOGE(TAG, "The current date/time error");
         } else {
+            time_t time_stap = mktime(&timeinfo);
             strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
             ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
-            printf("DELETE SNTP TASK!");
+             ESP_LOGI(TAG, "The current STAMP  date/time in Shanghai is: %ld",time_stap);
+            // printf("DELETE SNTP TASK!\n");
+            ESP_LOGI(TAG, "DELETE SNTP TASK!\n");
             vTaskDelete(NULL);
         }
 

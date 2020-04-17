@@ -34,6 +34,8 @@ static const int CONNECTED_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
 
+uint8_t sntp_flag =1;
+
 char *passwd=NULL;
 char *ssid=NULL;
 
@@ -57,7 +59,34 @@ static void on_got_ip(void *arg, esp_event_base_t event_base,
 {
     xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
 }
+static void task_status(void ){
+    TaskStatus_t *StatusArray;
+    UBaseType_t task_num;
+    int x;
+    uint32_t TotalRunTime;
+    UBaseType_t ArraySize;
+    task_num=uxTaskGetNumberOfTasks();      //获取系统任务数量
+    printf("uxTaskGetNumberOfTasks %d\r\n", task_num);
 
+    StatusArray=pvPortMalloc(task_num*sizeof(TaskStatus_t));//申请内存
+    if(StatusArray!=NULL)                   //内存申请成功
+    {
+        ArraySize=uxTaskGetSystemState((TaskStatus_t*   )StatusArray,   //任务信息存储数组
+                                    (UBaseType_t     )task_num,  //任务信息存储数组大小
+                                    (uint32_t*       )&TotalRunTime);//保存系统总的运行时间
+        printf("TaskName\t\tPriority\t\tTaskNumber\t\t\r\n");
+        for(x=0;x<task_num;x++)
+        {
+            printf("%s\t\t%d\t\t\t%d\t\t\t\r\n",                
+                    StatusArray[x].pcTaskName, //任务名称
+                    (int)StatusArray[x].uxCurrentPriority, //任务优先级
+                    (int)StatusArray[x].xTaskNumber); //任务编号
+
+        }
+    }
+    vPortFree(StatusArray); //释放内存
+
+}
 static esp_err_t My_wifi_init(void *ctx,system_event_t *event)
 {
     switch(event->event_id)
@@ -77,8 +106,15 @@ static esp_err_t My_wifi_init(void *ctx,system_event_t *event)
         case SYSTEM_EVENT_STA_GOT_IP:
             printf("---------------------\n");
             printf("GOT IP!\n");
-            printf("start sntp!");
-            // xTaskCreate(&sntp_example_task,"sntp_example_task", 1024+1024, NULL, 7, NULL);break;
+            
+            // task_status();
+            if(sntp_flag==1)
+            {
+                sntp_flag=0;
+                printf("start sntp!");
+                xTaskCreate(&sntp_example_task,"sntp_example_task", 1024+1024, NULL, 7, NULL);break;
+            }
+            
             printf("---------------------\n");
 
             break;

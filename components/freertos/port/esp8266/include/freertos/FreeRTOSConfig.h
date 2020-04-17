@@ -48,6 +48,11 @@
  * See http://www.freertos.org/a00110.html.
  *----------------------------------------------------------*/
 
+#define configUSE_TRACE_FACILITY 1
+
+#define configUSE_STATS_FORMATTING_FUNCTIONS 1
+
+
 #define portNUM_PROCESSORS          1
 #define configUSE_PREEMPTION		1
 

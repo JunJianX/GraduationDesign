@@ -5,9 +5,46 @@ static const char *TAG = "uart_events";
 
 #define EX_UART_NUM UART_NUM_0
 
-#define BUF_SIZE (1024)
+#define BUF_SIZE (128)
 #define RD_BUF_SIZE (BUF_SIZE)
 static QueueHandle_t uart0_queue;
+parse_event_struct_t my_uart_event;
+ parse_event_struct_t Parse(uint8_t *s)
+{
+     parse_event_struct_t t={
+    .event_type = 0,.ip = "192.168.1.104",.port = 8080,.address = 0,.length = 0};
+    
+    char *pforward= (char*)s,*pbehind = (char*)s,*pend = (char*)s;
+    char ip[16]="";
+    int port = 0;
+    char temp[5] ="";
+    if(strcmp((char*)s,"ota")==0) {t.event_type =FUN_MY_OTA; return t;}
+    if(strcmp((char*)s,"reboot")==0) {t.event_type =FUN_REBOOT;return t;}
+    if(strcmp((char*)s,"left")==0) {t.event_type = FUN_LEFT;return t;}
+    if(strcmp((char*)s,"FUN_RIGHT")==0) {t.event_type = FUN_RIGHT;return t;}
+
+    /*[IP:1.1.1.1,PORT:8080]*/
+    pforward = strstr((char*)s,"[IP:");
+    pbehind = strstr((char*)s,",PORT:");
+    pend = strstr((char*)s,"]");
+    if(pforward==NULL||pbehind==NULL||pend==NULL)
+    {
+        /*ERROR*/
+        ESP_LOGE("my_uart","ERROR Instruction!\n");
+    }else
+    {
+        /* code */
+        strncpy((&t)->ip,pforward+4,pbehind-pforward-4);
+        strncpy(temp,pbehind+6,pend-pbehind-6);
+        t.port = atoi(temp);
+        printf("IP:%s,PORT:%d",t.ip,t.port);
+    }
+    
+
+    return t;
+
+
+}
 
 void uart_event_task(void *pvParameters)
 {
@@ -29,6 +66,7 @@ void uart_event_task(void *pvParameters)
                     uart_read_bytes(EX_UART_NUM, dtmp, event.size, portMAX_DELAY);
                     ESP_LOGI(TAG, "[DATA EVT]:");
                     uart_write_bytes(EX_UART_NUM, (const char *) dtmp, event.size);
+                    my_uart_event=Parse(dtmp);
                     break;
 
                 // Event of HW FIFO overflow detected

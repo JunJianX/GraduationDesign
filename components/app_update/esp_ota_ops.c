@@ -171,6 +171,8 @@ esp_err_t esp_ota_write(esp_ota_handle_t handle, const void *data, size_t size)
 
             if(it->wrote_size == 0 && size > 0 && data_bytes[0] != 0xE9) {
                 ESP_LOGE(TAG, "OTA image has invalid magic byte (expected 0xE9, saw 0x%02x", data_bytes[0]);
+                printf("\n%s\n",(char*)data_bytes);
+                
                 return ESP_ERR_OTA_VALIDATE_FAILED;
             }
 

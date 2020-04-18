@@ -26,6 +26,8 @@
 #include "my_ota.h"
 // #include "test.h"
 
+
+
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 static EventGroupHandle_t wifi_event_group;
 int WiFi_Init_Or_Not=0;
@@ -37,12 +39,18 @@ static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
 
 uint8_t sntp_flag =1;
+uint8_t fun_left_flag = 0;
+uint8_t fun_right_flag = 0;
 
 char *passwd=NULL;
 char *ssid=NULL;
-
+extern parse_event_struct_t my_uart_event;
 void smartconfig_example_task(void * parm);
 
+void clear_uart_event(void)
+{
+    my_uart_event.event_type=0;
+}
 static void on_wifi_disconnect(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
 {
@@ -282,7 +290,6 @@ static void connect_ap(char *apName, char *apPassword)
     ESP_ERROR_CHECK( esp_wifi_start() );
 
 }*/
-
 void app_main()
 {
     esp_err_t err = nvs_flash_init();
@@ -294,8 +301,9 @@ void app_main()
     ESP_ERROR_CHECK(err);
 
     my_uart_init();
-    xTaskCreate(&uart_event_task,"uart_event_task", 1024, NULL, 8, NULL); 
-    // xTaskCreate();
+    xTaskCreate(&uart_event_task,"uart_event_task", 512+128, NULL, 8, NULL); 
+
+    // printf("\n\nOTA SUCCESS!\n\n");
 
     
     passwd = malloc(64+1);
@@ -330,6 +338,26 @@ void app_main()
     initialise_wifi();
     while(1)
     {
+        switch(my_uart_event.event_type){
+        case FUN_MY_OTA: 
+            printf("Execute OTA!\n");
+            xTaskCreate(&ota_example_task,"ota_example_task",8192,NULL,6,NULL);
+            break;
+        case FUN_REBOOT: 
+            esp_restart();
+            break;
+        case FUN_LEFT: 
+            fun_left_flag=1;
+            break;
+        case FUN_RIGHT:
+            fun_left_flag=1;
+            break;
+        case FUN_SET_SSID_PASSED:
+            break;
+        default :
+            break;
+        }
+        my_uart_event.event_type=0;
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
 

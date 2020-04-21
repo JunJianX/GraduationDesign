@@ -18,6 +18,7 @@ typedef enum {
     FUN_LEFT,          /*!< UART FIFO overflow event*/
     FUN_RIGHT,         /*!< UART RX frame error event*/
     FUN_SET_SSID_PASSED,
+    FUN_GET_TIME,
 } parse_event_type_t;
 
 
@@ -27,7 +28,8 @@ typedef struct {
     int  port;  
     uint32_t address;
     uint32_t length;
-    
+    char ssid[32];
+    char passwd[32];
 } parse_event_struct_t;
  /*struct parse_event_struct_t{
     parse_event_type_t event_type;          

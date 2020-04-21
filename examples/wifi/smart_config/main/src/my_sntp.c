@@ -1,7 +1,8 @@
 #include "my_sntp.h"
 
 static const char *TAG = "sntp_example";
-
+extern EventGroupHandle_t wifi_event_group;
+extern const int CONNECTED_BIT;
 static void initialize_sntp(void)
 {
     ESP_LOGI(TAG, "Initializing SNTP");
@@ -21,6 +22,7 @@ static void obtain_time(void)
     // const int retry_count = 10;
 
     while (timeinfo.tm_year < (2016 - 1900) /*&& ++retry < retry_count*/) {
+        // xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT , true, false, portMAX_DELAY); 
         printf( "Waiting for system time to be set... \n");
         vTaskDelay(2000 / portTICK_PERIOD_MS);
         time(&now);
@@ -33,7 +35,8 @@ void sntp_example_task(void *arg)
     time_t now;
     struct tm timeinfo;
     char strftime_buf[64];
-
+    EventBits_t uxBits;
+    
     time(&now);
     localtime_r(&now, &timeinfo);
 
@@ -53,6 +56,7 @@ void sntp_example_task(void *arg)
 
     while (1) {
         // update 'now' variable with current time
+       
         time(&now);
         localtime_r(&now, &timeinfo);
 

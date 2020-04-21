@@ -12,7 +12,7 @@ parse_event_struct_t my_uart_event;
  parse_event_struct_t Parse(uint8_t *s)
 {
      parse_event_struct_t t={
-    .event_type = 0,.ip = "192.168.1.104",.port = 8080,.address = 0,.length = 0};
+    .event_type = 0,.ip = "192.168.1.104",.port = 8080,.address = 0,.length = 0,.ssid="",.passwd=""};
     
     char *pforward= (char*)s,*pbehind = (char*)s,*pend = (char*)s;
     char ip[16]="";
@@ -21,8 +21,10 @@ parse_event_struct_t my_uart_event;
     if(strcmp((char*)s,"ota")==0) {t.event_type =FUN_MY_OTA; return t;}
     if(strcmp((char*)s,"reboot")==0) {t.event_type =FUN_REBOOT;return t;}
     if(strcmp((char*)s,"left")==0) {t.event_type = FUN_LEFT;return t;}
-    if(strcmp((char*)s,"FUN_RIGHT")==0) {t.event_type = FUN_RIGHT;return t;}
+    if(strcmp((char*)s,"right")==0) {t.event_type = FUN_RIGHT;return t;}
+    if(strcmp((char*)s,"time")==0) {t.event_type = FUN_GET_TIME;return t;}
 
+    ESP_LOGE("my_uart","/***************************/\n");
     /*[IP:1.1.1.1,PORT:8080]*/
     pforward = strstr((char*)s,"[IP:");
     pbehind = strstr((char*)s,",PORT:");

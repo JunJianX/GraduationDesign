@@ -24,17 +24,22 @@
 #include "my_sntp.h"
 #include "my_uart.h"
 #include "my_ota.h"
+#include "lcd.h"
+#include "adc.h"
+#include "font.h"
+#include "my_mqtt_client.h"
 // #include "test.h"
 
 
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
-static EventGroupHandle_t wifi_event_group;
+EventGroupHandle_t wifi_event_group;
 int WiFi_Init_Or_Not=0;
+int mqtt_init_or_not=0;
 /* The event group allows multiple bits for each event,
    but we only care about one event - are we connected
    to the AP with an IP? */
-static const int CONNECTED_BIT = BIT0;
+const int CONNECTED_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
 
@@ -44,6 +49,7 @@ uint8_t fun_right_flag = 0;
 
 char *passwd=NULL;
 char *ssid=NULL;
+// TaskHandle_t sntp_handle;
 extern parse_event_struct_t my_uart_event;
 void smartconfig_example_task(void * parm);
 
@@ -107,30 +113,37 @@ static esp_err_t My_wifi_init(void *ctx,system_event_t *event)
             {
 
             }
-            else if(WiFi_Init_Or_Not ==0 )
+            else if(WiFi_Init_Or_Not==0 )
             {
-                xTaskCreate(&smartconfig_example_task,"smartconfig_example_task", 1024+1024, NULL, 7, NULL);break;
+                xTaskCreate(&smartconfig_example_task,"smartconfig_example_task", 1024+1024, NULL, 7, NULL);
+                WiFi_Init_Or_Not=1;
+                break;
             }
+
             // xTaskCreate(&smartconfig_example_task,"smartconfig_example_task", 1024+1024, NULL, 7, NULL);break;
         
         case SYSTEM_EVENT_STA_GOT_IP:
             printf("---------------------\n");
             printf("GOT IP!\n");
+            xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
             
             // task_status();
             if(sntp_flag==1)
             {
                 sntp_flag=0;
                 printf("start sntp!");
-                xTaskCreate(&sntp_example_task,"sntp_example_task", 1024+1024, NULL, 7, NULL);break;
-            }
-            
-            printf("---------------------\n");
+                xTaskCreate(&sntp_example_task,"sntp_example_task", 1024+1024, NULL, 7, NULL);
+                mqtt_init_or_not=1;
+                break;
 
+            }
+            printf("---------------------\n");
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
             printf("---------------------\n");
-            printf("DISCONNECTED!\n");
+            printf("DISCONNECTED!Trying \n");
+            xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
+            esp_wifi_connect();
             printf("---------------------\n");
             break;
         default:break;
@@ -290,19 +303,71 @@ static void connect_ap(char *apName, char *apPassword)
     ESP_ERROR_CHECK( esp_wifi_start() );
 
 }*/
+
+void display_task(void * parm)
+{   
+    struct tm timeinfo;
+    time_t t;
+    char buffer[17]="";
+   
+    char strftime_buf[64];////////////////
+    /*2020-01-01 00:00*/
+   
+    uint8_t i=0;
+    while(1)
+    {
+        i++;
+        if(i%5==0)//every 5 seconds flush
+        {   time(&t);
+            localtime_r(&t,&timeinfo);
+            sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
+            dsp_single_colour_x_region(0,0,128,16,GREEN);
+            Display_ASCII8X16(0,0,buffer,RED);
+            printf("\n%s\n",buffer);
+            printf("\n%ld\n",t);
+            strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+            ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
+        }
+        if(i==99)
+        {
+            i=0;
+        }
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
+    // Zk_ASCII8X16
+}
+void tel_monitor(void *parm)
+{
+
+}
 void app_main()
 {
+    time_t t=0;
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
-
     ESP_ERROR_CHECK(err);
-
-    my_uart_init();
-    xTaskCreate(&uart_event_task,"uart_event_task", 512+128, NULL, 8, NULL); 
-
+    /****************************/
+    Adc_Init();
+    printf("MAIN1---------------------------------\n");
+    LCD_GPIO_Init();
+    printf("MAIN2---------------------------------\n");
+    lcd_initial();
+    printf("MAIN3---------------------------------\n");
+    /****************************/
+    // now_tick=xTaskGetTickCount();
+    // vTaskDelayUntil(now_tick,500);
+    dsp_single_colour(BLACK);
+    vTaskDelay(1000/portTICK_PERIOD_MS);
+    ets_delay_us(1000000);
+    /*my_uart_init();
+    xTaskCreate(&uart_event_task,"uart_event_task", 1024, NULL, 8, NULL); 
+    xTaskCreate(&display_task,"display_task",1024, NULL, 5, NULL);*/
+    printf("\nStart MQTT TASK\n");
+    // xTaskCreate(&My_mqtt_task,"My_mqtt_task",4096+2048+1024,NULL,6,NULL);
+   
     // printf("\n\nOTA SUCCESS!\n\n");
 
     
@@ -338,6 +403,12 @@ void app_main()
     initialise_wifi();
     while(1)
     {
+        if(mqtt_init_or_not==1)
+        {
+            xTaskCreate(&My_mqtt_task,"My_mqtt_task",8192+1024,NULL,6,NULL);
+            mqtt_init_or_not=0;
+        }
+            
         switch(my_uart_event.event_type){
         case FUN_MY_OTA: 
             printf("Execute OTA!\n");
@@ -354,6 +425,11 @@ void app_main()
             break;
         case FUN_SET_SSID_PASSED:
             break;
+        case FUN_GET_TIME:
+            time(&t);
+            printf("\nThe time is %ld \n",t);
+            break;
+            
         default :
             break;
         }

@@ -163,21 +163,21 @@ void My_mqtt_task(void /**parm*/)
     IOT_RegisterCallback(ITE_IDENTITY_RESPONSE, identity_response_handle);
     IOT_RegisterCallback(ITE_STATE_EVERYTHING, everything_state_handle);
 
-    printf("\nhello mqtt!\n");
+    // printf("\nhello mqtt!\n");
     EXAMPLE_TRACE("mqtt example");
 
     memset(&mqtt_params, 0x0, sizeof(mqtt_params));
-    printf("\nline 164\n");
+    // printf("\nline 164\n");
    
     mqtt_params.handle_event.h_fp = example_event_handle;
 
     pclient = IOT_MQTT_Construct(&mqtt_params);
-    printf("\nline 169\n");
+    // printf("\nline 169\n");
     if (NULL == pclient) {
         EXAMPLE_TRACE("MQTT construct failed");
         return ;
     }
-    printf("\nline 174\n");
+    // printf("\nline 174\n");
 
     IOT_Ioctl(IOTX_IOCTL_GET_PRODUCT_KEY, g_product_key);
     IOT_Ioctl(IOTX_IOCTL_GET_DEVICE_NAME, g_device_name);

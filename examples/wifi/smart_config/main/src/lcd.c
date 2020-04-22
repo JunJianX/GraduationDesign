@@ -337,6 +337,12 @@ void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 			if(s[i]=='u')
 			printf("\nu index is %ld\n",ulOffset);*/
 			// printf("LCD_Display_ASCII8X162---------------------------------\n");		
+			// ////////////////////
+			// while(1)
+			// {
+			// 	printf(".");
+			// 	vTaskDelay(1);
+			// }
 			for(y = 0;y < 16;y++)
 			{
 					for(x=0;x<8;x++) 

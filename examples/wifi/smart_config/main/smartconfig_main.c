@@ -51,6 +51,7 @@ char *passwd=NULL;
 char *ssid=NULL;
 // TaskHandle_t sntp_handle;
 extern parse_event_struct_t my_uart_event;
+extern int sntp_ok_flag;
 void smartconfig_example_task(void * parm);
 
 void clear_uart_event(void)
@@ -151,33 +152,6 @@ static esp_err_t My_wifi_init(void *ctx,system_event_t *event)
     }
     return ESP_OK;
 }
-/*
-static void initialise_wifi(void)
-{
-    tcpip_adapter_init();
-    wifi_event_group = xEventGroupCreate();
-
-    // ESP_ERROR_CHECK(esp_event_loop_create_default());
-    ESP_ERROR_CHECK(esp_event_loop_init(My_wifi_init,NULL));
-    printf("222222222222222222\n");
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-
-    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &on_wifi_disconnect, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &on_got_ip, NULL));
-    
-    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-    // wifi_config_t wifi_config = {
-    //     .sta = {
-    //         .ssid = "zhe_tian_xia_dou_shi_zhen_de",
-    //         .password = "17806334985"
-    //     },
-    // };
-    
-    // ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA,&wifi_config));
-    ESP_ERROR_CHECK( esp_wifi_start() );
-    ESP_ERROR_CHECK( esp_wifi_connect() );
-}*/
 static void initialise_wifi(void)
 {
     tcpip_adapter_init();
@@ -271,38 +245,6 @@ void smartconfig_example_task(void * parm)
         }
     }
 }
-/*
-static void connect_ap(char *apName, char *apPassword)
-{
-    
-    tcpip_adapter_init();
-    wifi_event_group = xEventGroupCreate();
-    
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-
-    ESP_ERROR_CHECK( esp_event_loop_init(My_wifi_init, NULL) );
-    wifi_config_t config;
-    
- 
-    
-    
-    ESP_ERROR_CHECK( esp_wifi_init(&cfg) );
-    ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
-
-
-    if(WiFi_Init_Or_Not==1)
-    {
-        memset(&config,0,(sizeof(config)));
-        memcpy(config.sta.ssid,apName,(strlen(apName)));
-        memcpy(config.sta.password,apPassword,(strlen(apPassword)));
-    
-        printf("config read is:%s\n", config.sta.ssid);
-        printf("config read is:%s\n", config.sta.password);
-    }
-    ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
-    ESP_ERROR_CHECK( esp_wifi_start() );
-
-}*/
 
 void display_task(void * parm)
 {   
@@ -310,8 +252,7 @@ void display_task(void * parm)
     time_t t;
     char buffer[17]="";
    
-    char strftime_buf[64];////////////////
-    /*2020-01-01 00:00*/
+    char strftime_buf[32];
    
     uint8_t i=0;
     while(1)
@@ -325,8 +266,8 @@ void display_task(void * parm)
             Display_ASCII8X16(0,0,buffer,RED);
             printf("\n%s\n",buffer);
             printf("\n%ld\n",t);
-            strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-            ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
+            // strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+            // ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
         }
         if(i==99)
         {
@@ -334,15 +275,27 @@ void display_task(void * parm)
         }
         vTaskDelay(1000/portTICK_PERIOD_MS);
     }
-    // Zk_ASCII8X16
 }
-void tel_monitor(void *parm)
+void test_task(void* param)
 {
-
+    char* pbuffer = (char*) malloc(2048);
+    memset(pbuffer, 0x0, 2048);
+    while(1) {
+        printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
+        vTaskList(pbuffer);
+        printf("%s", pbuffer);
+        printf("----------------------------------------------\r\n");
+        vTaskDelay(3000 / portTICK_RATE_MS);
+    }
+    free(pbuffer);
 }
 void app_main()
 {
-    time_t t=0;
+    time_t t;
+    uint8_t i=0;
+    struct tm timeinfo;
+    char buffer[17]="2020-04-22 21:38";
+    char strftime_buf[32];
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -362,32 +315,22 @@ void app_main()
     dsp_single_colour(BLACK);
     vTaskDelay(1000/portTICK_PERIOD_MS);
     ets_delay_us(1000000);
-    /*my_uart_init();
+    my_uart_init();
+    //////////
+    printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
     xTaskCreate(&uart_event_task,"uart_event_task", 1024, NULL, 8, NULL); 
-    xTaskCreate(&display_task,"display_task",1024, NULL, 5, NULL);*/
+    xTaskCreate(&display_task,"display_task",1024, NULL, 12, NULL);
+    printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
+    // xTaskCreate(&test_task, "test_task", 1024, NULL, 7, NULL);
     printf("\nStart MQTT TASK\n");
     // xTaskCreate(&My_mqtt_task,"My_mqtt_task",4096+2048+1024,NULL,6,NULL);
    
-    // printf("\n\nOTA SUCCESS!\n\n");
-
-    
     passwd = malloc(64+1);
     ssid = malloc(32+1);
 
     memset(passwd,0,64+1);
     memset(ssid,0,32+1);
     
-
-    /*if(Read_ssid_passwd(ssid,passwd)==0)
-    {
-        connect_ap(ssid, passwd);
-        printf("Read passwd&&ssid sccucessful!!\n");
-    } 
-    else 
-    {
-        printf("Read passwd&&ssid failed !!\n");
-        initialise_wifi();
-    }*/
 
     if(Read_ssid_passwd(ssid,passwd)==0)
     {
@@ -403,11 +346,32 @@ void app_main()
     initialise_wifi();
     while(1)
     {
-        if(mqtt_init_or_not==1)
+        if(mqtt_init_or_not==1&&sntp_ok_flag==1)
         {
-            xTaskCreate(&My_mqtt_task,"My_mqtt_task",8192+1024,NULL,6,NULL);
+            xTaskCreate(&My_mqtt_task,"My_mqtt_task",8192,NULL,8,NULL);
             mqtt_init_or_not=0;
+            sntp_ok_flag=0;
         }
+
+        /**/
+        i++;
+        if(i%10==0)//every 5 seconds flush
+        {   //time(&t);
+            // localtime_r(&t,&timeinfo);
+            // sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
+            // snprintf(buffer,16,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
+            // dsp_single_colour_x_region(0,0,128,16,GREEN);
+            // Display_ASCII8X16(0,0,buffer,RED);
+            //printf("\n%s\n",buffer);
+            //printf("\n%ld\n",t);
+            // strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+            //ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
+            // Display_ASCII8X16(0,0,buffer,RED);
+            // printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
+            i=0;
+        }
+       
+        /**/
             
         switch(my_uart_event.event_type){
         case FUN_MY_OTA: 

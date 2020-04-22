@@ -3,6 +3,7 @@
 static const char *TAG = "sntp_example";
 extern EventGroupHandle_t wifi_event_group;
 extern const int CONNECTED_BIT;
+int sntp_ok_flag=0;
 static void initialize_sntp(void)
 {
     ESP_LOGI(TAG, "Initializing SNTP");
@@ -69,6 +70,7 @@ void sntp_example_task(void *arg)
              ESP_LOGI(TAG, "The current STAMP  date/time in Shanghai is: %ld",time_stap);
             // printf("DELETE SNTP TASK!\n");
             ESP_LOGI(TAG, "DELETE SNTP TASK!\n");
+            sntp_ok_flag=1;
             vTaskDelete(NULL);
         }
 

@@ -146,10 +146,10 @@ void *IOT_MQTT_Construct(iotx_mqtt_param_t *pInitParams)
     if (g_mqtt_client != NULL) {
         return g_mqtt_client;
     }
-    printf("\nline145\n");
+    // printf("\nline145\n");
     /* get region */
     IOT_Ioctl(IOTX_IOCTL_GET_REGION, (void *)&region);
-    printf("\nline148\n");
+    // printf("\nline148\n");
   
     /* get dynamic option */
     IOT_Ioctl(IOTX_IOCTL_GET_DYNAMIC_REGISTER, (void *)&dynamic);

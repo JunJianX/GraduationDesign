@@ -266,8 +266,6 @@ void display_task(void * parm)
             Display_ASCII8X16(0,0,buffer,RED);
             printf("\n%s\n",buffer);
             printf("\n%ld\n",t);
-            // strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-            // ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
         }
         if(i==99)
         {
@@ -294,8 +292,9 @@ void app_main()
     time_t t;
     uint8_t i=0;
     struct tm timeinfo;
-    char buffer[17]="2020-04-22 21:38";
-    char strftime_buf[32];
+    // char buffer[17]="2020-04-22 21:38";
+    // char strftime_buf[32];
+    char adc_data[10];
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -368,8 +367,12 @@ void app_main()
             //ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
             // Display_ASCII8X16(0,0,buffer,RED);
             // printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
+           
             i=0;
         }
+         if (ESP_OK == adc_read(&adc_data[0])) {
+                // printf("%d\n",adc_data[0]);
+            }
        
         /**/
             

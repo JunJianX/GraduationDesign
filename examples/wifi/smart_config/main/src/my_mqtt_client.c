@@ -27,7 +27,7 @@ char g_device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "jiPvZkVO9lhNj2Q9f2KdP4Yln7
 void example_message_arrive(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg)
 {
     iotx_mqtt_topic_info_t     *topic_info = (iotx_mqtt_topic_info_pt) msg->msg;
-
+    printf("\n-------------------example_message_arrive------------------\n");
     switch (msg->event_type) {
         case IOTX_MQTT_EVENT_PUBLISH_RECEIVED:
             /* print topic name and topic message */
@@ -44,7 +44,8 @@ void example_message_arrive(void *pcontext, void *pclient, iotx_mqtt_event_msg_p
 int example_subscribe(void *handle)
 {
     int res = 0;
-    const char *fmt = "/%s/%s/user/get";
+    // const char *fmt = "/%s/%s/user/up";
+    const char *fmt = "/sys/%s/%s/thing/event/property/post_reply";
     char *topic = NULL;
     int topic_len = 0;
 
@@ -63,6 +64,8 @@ int example_subscribe(void *handle)
         HAL_Free(topic);
         return -1;
     }
+    
+
 
     HAL_Free(topic);
     return 0;
@@ -71,10 +74,12 @@ int example_subscribe(void *handle)
 int example_publish(void *handle)
 {
     int             res = 0;
-    const char     *fmt = "/%s/%s/user/get";
+    // const char     *fmt = "/%s/%s/user/up";
+    const char     *fmt = "/sys/%s/%s/thing/event/property/post";
     char           *topic = NULL;
     int             topic_len = 0;
-    char           *payload = "{\"message\":\"hello!\"}";
+    // char           *payload = "{\"message\":\"hello!\"}";
+    char           *payload = "{\"Temperature\": 1.23}";
 
     topic_len = strlen(fmt) + strlen(g_product_key) + strlen(g_device_name) + 1;
     topic = HAL_Malloc(topic_len);
@@ -85,6 +90,7 @@ int example_publish(void *handle)
     memset(topic, 0, topic_len);
     HAL_Snprintf(topic, topic_len, fmt, g_product_key, g_device_name);
 
+    printf("Publish payload:\n");
     res = IOT_MQTT_Publish_Simple(0, topic, IOTX_MQTT_QOS0, payload, strlen(payload));
     if (res < 0) {
         EXAMPLE_TRACE("publish failed, res = %d", res);
@@ -182,11 +188,11 @@ void My_mqtt_task(void /**parm*/)
     IOT_Ioctl(IOTX_IOCTL_GET_PRODUCT_KEY, g_product_key);
     IOT_Ioctl(IOTX_IOCTL_GET_DEVICE_NAME, g_device_name);
 
-    res = example_subscribe(pclient);
+    /*res = example_subscribe(pclient);
     if (res < 0) {
         IOT_MQTT_Destroy(&pclient);
         return ;
-    }
+    }*/
 
     while (1) {
         if (0 == loop_cnt % 20) {

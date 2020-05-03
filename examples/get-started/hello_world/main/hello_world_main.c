@@ -15,7 +15,7 @@
 #include "lcd.h"
 #include "adc.h"
 #include "font.h"
-#include "dht11.h"
+#include "dht.h"
 #include "driver/gpio.h"
 #include "my_delay.h"
 #include "my_gpio.h"
@@ -76,7 +76,9 @@ void app_main()
 {
 
     int i=0,j=0;
-
+    u8 buffer[5];
+    double hum;
+    double temp;
     TickType_t now_tick;
     
     printf("Hello world!\n");
@@ -94,11 +96,11 @@ void app_main()
 
     // Adc_Init();
     printf("MAIN1---------------------------------\n");
-    // LCD_GPIO_Init();
+    LCD_GPIO_Init();
     printf("MAIN2---------------------------------\n");
-    // lcd_initial();
+    lcd_initial();
     printf("MAIN3---------------------------------\n");
-    // dsp_single_colour(BLACK);
+    dsp_single_colour(BLACK);
     vTaskDelay(1000/portTICK_PERIOD_MS);
 
     //xTaskCreate(&Read_DHT11_task,"Read_DHT11_task", 1024, NULL, 8, NULL); 
@@ -122,6 +124,15 @@ void app_main()
     // vTaskDelay(10000/portTICK_PERIOD_MS);
     while (1)
     {
+        // if(dht11_read_data(buffer)==0)
+        // {
+        //     hum = buffer[0] + buffer[1] / 10.0;
+        //     temp = buffer[2] + buffer[3] / 10.0;
+        //     printf("___{\"temperature\": %.2f, \"humidness\": %.2f}___\n\r", temp, hum);
+        // }
+        Display_Image(0,0,128,128,gImage_image);
+
+
             // GPIO_set_mode(1);
             // printf("Output HIGH after 10s\n");
             // vTaskDelay(10000/portTICK_PERIOD_MS);
@@ -137,20 +148,26 @@ void app_main()
             // vTaskDelay(10000/portTICK_PERIOD_MS);
             // printf("The Level is %d\n",gpio_get_level(0));
             // vTaskDelay(10000/portTICK_PERIOD_MS);.
-            uint8_t r = DHT11ReadDataComplete();
-            if(r==0)
-            {
-                printf("%d\n",DHT11_Data_Array[0]);
-                printf("%d\n",DHT11_Data_Array[1]);
-                printf("%d\n",DHT11_Data_Array[2]);
-                printf("%d\n",DHT11_Data_Array[3]);
-                printf("%d\n",DHT11_Data_Array[4]);
-                printf("%d\n",DHT11_Data_Array[5]);
-            }else
-            {
+
+
+
+            // uint8_t r = DHT11ReadDataComplete();
+            // if(r==0)
+            // {
+            //     printf("%d\n",DHT11_Data_Array[0]);
+            //     printf("%d\n",DHT11_Data_Array[1]);
+            //     printf("%d\n",DHT11_Data_Array[2]);
+            //     printf("%d\n",DHT11_Data_Array[3]);
+            //     printf("%d\n",DHT11_Data_Array[4]);
+            //     // printf("%d\n",DHT11_Data_Array[5]);
+            // }else
+            // {
                 
-                printf("error:%ud\n",r);
-            }
+            //     printf("error:%ud\n",r);
+            // }
+
+
+
            /* printf("----------------------\n");
             printf("\n%f\n",(double)(esp_timer_get_time()/1000));
             // ets_delay_us(10000);

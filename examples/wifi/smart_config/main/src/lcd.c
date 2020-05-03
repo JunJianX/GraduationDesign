@@ -287,10 +287,15 @@ void Draw_any_color(uint x,uint y,uint width,uint height,int color)
 void dsp_single_colour_x_region(int s_x,int s_y,int width,int height,int color)
 {
 	uchar i,j;
-	Lcd_SetRegion(s_x,s_y,width,height);
-	for(i=s_x;i<width;i++)
-		for(j=s_y;j<height;j++)
-			LCD_WriteData_16Bit(color);
+	// Lcd_SetRegion(s_x,s_y,width,height);
+	/*for(i=s_x;i<width+s_x;i++)
+		for(j=s_y;j<height+s_y;j++)
+			LCD_WriteData_16Bit(color);*/
+			//48,16,40,16
+	// Lcd_SetRegion(48,16,40,16);
+	for(i=s_x;i<s_x+width;i++)
+		for(j=s_y;j<s_y+height;j++)
+			PutPixel(i,j,color);
 }
 void dsp_single_colour(int color)
 {
@@ -301,6 +306,48 @@ void dsp_single_colour(int color)
         	LCD_WriteData_16Bit(color);
 }
 
+void Display_chinese16X16(uint x0,uint y0,uint s,uint color)
+{
+/*
+0x08
+0000 1000
+0x20
+0010 0000
+
+0x0820
+0000 1000 0010 0000
+
+*/
+	int i=0,j,k,x,y,xx;
+	unsigned char qm;
+	long int ulOffset;
+	uint8_t postion=0;
+	char  ywbuf[32],temp[2];
+	uint font = 0;
+	//chinese16x16
+	for(x = 0;x < 16;x++)
+	{
+		font = 0;
+		postion = x*2;//像素点的位置
+		font =  (chinese16x16[s][postion]<<8)|chinese16x16[s][postion+1];
+		for(y=0;y<16;y++) 
+		{
+			/*k=x % 16;
+							
+			if(ywbuf[y]&(0x80 >> k))
+			{
+				xx=x0+x+i*8;
+				PutPixel(xx,y+y0,color);
+			}*/
+			if(font&(0x8000>>y))
+			{
+				PutPixel(x0+x,y+y0,color);
+			}
+									
+		}
+	}
+	 	
+}
 void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 {
 	int i,j,k,x,y,xx;
@@ -364,12 +411,11 @@ void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 }
 
 
-
 void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Image(0,0,128,128,gImage_image);
 {
 	long int max=0;long int i_max;
 	
-	Lcd_SetRegion(x0,y0,x0+width-1,y0+height-1);
+	// Lcd_SetRegion(x0,y0,x0+width-1,y0+height-1);
 	uint i,j;
 	uint color;
 
@@ -378,15 +424,14 @@ void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Imag
 		for(j = 0;j<height;j++)
 		{
 			color=0;
-			color= (  (s[((i*width)<<1)+(j<<1)+1] )  | ( s[(i*width+j+1)<<1]<<8)  );
-			LCD_WriteData_16Bit(color);
-			if(max<i*width+j)
-				max = i*width+j;
+			color= (  (s[((i*width+j+1)<<1)+1]<<8 )  | ( s[(i*width+j+1)<<1])  );
+			// LCD_WriteData_16Bit(color);
+			// if(max<i*width+j)
+			// 	max = i*width+j;
 			// PutPixel(x0+i,y0+j,color);
 			// printf("\t(%d)\t",i*width+j);
+			PutPixel(y0+j,x0+i,color);
 		}
 		
 	}
-	printf("\n\t(%ld)\t\n",max);
-	printf("\n\t The max i is(%d)\t\n",i);
 }

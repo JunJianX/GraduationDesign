@@ -20,7 +20,7 @@
 #include "esp32_compat.h"
 #include "esp_log.h"
 
-#define CONFIG_LINKKIT_FIRMWARE_VERSION 50
+#define CONFIG_LINKKIT_FIRMWARE_VERSION "version1.0"
 // #include "ets_sys.h"
 // #include "esp_system.h"
 /*#include "esp_wifi.h"
@@ -112,7 +112,8 @@ int HAL_GetFirmwareVersion(char *version)
 {
     char TAG[]="wrappers.c";
 	if (!version) {
-        ESP_LOGE(TAG, "%s version is NULL", __func__);
+         ESP_LOGE("%s version is NULL", __func__);
+        printf("error version format!\n");
         return 0;
     }
 
@@ -123,6 +124,7 @@ int HAL_GetFirmwareVersion(char *version)
     } else {
         memcpy(version, CONFIG_LINKKIT_FIRMWARE_VERSION, len);
     }
+  
 
     return len;
 }

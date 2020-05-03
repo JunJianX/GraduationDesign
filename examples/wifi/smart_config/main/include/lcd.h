@@ -17,35 +17,40 @@
 #define GRAY1   0x8410      	//»ÒÉ«1      00000 000000 00000
 #define GRAY2   0x4208      	//»ÒÉ«2  1111111111011111
 
+/*
+CS  16
+RST  5
+RS  4
+SDI 14
+CLK 12
+    LED
+    NC
+    NC
+GND
+GND
+VCC    
 
 
 
-#define LCD_CTRL   	  	GPIOB		//¶¨ÒåTFTÊý¾Ý¶Ë¿Ú
-#define LCD_LED        	GPIO_Pin_9  //MCU_PB9--->>TFT --BL
-#define LCD_RS         	GPIO_Pin_10	//PB11--->>TFT --RS/DC
-#define LCD_CS        	GPIO_Pin_11  //MCU_PB11--->>TFT --CS/CE
-#define LCD_RST     	GPIO_Pin_12	//PB10--->>TFT --RST
-#define LCD_SCL        	GPIO_Pin_13	//PB13--->>TFT --SCL/SCK
-#define LCD_SDA        	GPIO_Pin_15	//PB15 MOSI--->>TFT --SDA/DIN
+16 14 5 4 12
 
 
-//#define LCD_CS_SET(x) LCD_CTRL->ODR=(LCD_CTRL->ODR&~LCD_CS)|(x ? LCD_CS:0)
 
-//Òº¾§¿ØÖÆ¿ÚÖÃ1²Ù×÷Óï¾äºê¶¨Òå
+*/
 #define	LCD_CS_SET_1  	gpio_set_level(16,1) //gpio_set_level(,1) //LCD_CTRL->BSRR=LCD_CS    
-#define	LCD_RS_SET_1  	gpio_set_level(14,1) //LCD_CTRL->BSRR=LCD_RS    
-#define	LCD_SDA_SET_1  	gpio_set_level(5,1) //LCD_CTRL->BSRR=LCD_SDA    
-#define	LCD_SCL_SET_1  	gpio_set_level(4,1) //LCD_CTRL->BSRR=LCD_SCL    
-#define	LCD_RST_SET_1  	gpio_set_level(12,1)//gpio_set_level(,1) //LCD_CTRL->BSRR=LCD_RST    
-#define	LCD_LED_SET_1  	;//gpio_set_level(,1) //LCD_CTRL->BSRR=LCD_LED   
+#define	LCD_RS_SET_1  	gpio_set_level(4,1) //LCD_CTRL->BSRR=LCD_RS    
+#define	LCD_SDA_SET_1  	gpio_set_level(14,1) //LCD_CTRL->BSRR=LCD_SDA    
+#define	LCD_SCL_SET_1  	gpio_set_level(12,1) //LCD_CTRL->BSRR=LCD_SCL    
+#define	LCD_RST_SET_1  	gpio_set_level(5,1)//gpio_set_level(,1) //LCD_CTRL->BSRR=LCD_RST    
 
+ 
 //Òº¾§¿ØÖÆ¿ÚÖÃ0²Ù×÷Óï¾äºê¶¨Òå
 #define	LCD_CS_CLR_0  	gpio_set_level(16,0)//LCD_CTRL->BRR=LCD_CS    
-#define	LCD_RS_CLR_0  	gpio_set_level(14,0)//LCD_CTRL->BRR=LCD_RS    
-#define	LCD_SDA_CLR_0  	gpio_set_level(5,0)//LCD_CTRL->BRR=LCD_SDA    
-#define	LCD_SCL_CLR_0  	gpio_set_level(4,0)//LCD_CTRL->BRR=LCD_SCL    
-#define	LCD_RST_CLR_0  	gpio_set_level(12,0)//LCD_CTRL->BRR=LCD_RST    
-#define	LCD_LED_CLR_0  	;//LCD_CTRL->BRR=LCD_LED 
+#define	LCD_RS_CLR_0  	gpio_set_level(4,0)//LCD_CTRL->BRR=LCD_RS    
+#define	LCD_SDA_CLR_0  	gpio_set_level(14,0)//LCD_CTRL->BRR=LCD_SDA    
+#define	LCD_SCL_CLR_0  	gpio_set_level(12,0)//LCD_CTRL->BRR=LCD_SCL    
+#define	LCD_RST_CLR_0  	gpio_set_level(5,0)//LCD_CTRL->BRR=LCD_RST    
+
 
 
 
@@ -66,6 +71,7 @@ void  PutPixel(uint x_start,uint y_start,uint color);
 void  dsp_single_colour_x_region(int s_x,int s_y,int width,int height,int color);
 void  dsp_single_colour(int color);
 void  Display_ASCII8X16(uint x0,uint y0,char *s,uint color);
+void Display_chinese16X16(uint x0,uint y0,uint s,uint color);
 void  Display_Image(uint x0,uint y0,uint width,uint height,char *s);
 void  Draw_any_color(uint x,uint y,uint width,uint height,int color);
 #endif

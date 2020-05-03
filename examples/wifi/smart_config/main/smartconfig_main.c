@@ -28,6 +28,9 @@
 #include "adc.h"
 #include "font.h"
 #include "my_mqtt_client.h"
+#include "eagle_soc.h"
+#include "my_gpio.h"
+#include "my_dht11.h"
 // #include "test.h"
 
 
@@ -47,11 +50,17 @@ uint8_t sntp_flag =1;
 uint8_t fun_left_flag = 0;
 uint8_t fun_right_flag = 0;
 
+float Temperature=13.12;
+uint8_t humidity=50;
+uint16_t Gas=20;
+uint8_t controller=0;
+
 char *passwd=NULL;
 char *ssid=NULL;
 // TaskHandle_t sntp_handle;
 extern parse_event_struct_t my_uart_event;
 extern int sntp_ok_flag;
+extern const unsigned char wifi_image[748] ;
 void smartconfig_example_task(void * parm);
 
 void clear_uart_event(void)
@@ -249,23 +258,85 @@ void smartconfig_example_task(void * parm)
 void display_task(void * parm)
 {   
     struct tm timeinfo;
-    time_t t;
+    time_t t=0;
+    u8 buffer_TH[5];
     char buffer[17]="";
-   
-    char strftime_buf[32];
-   
+    uint8_t time_flag = 0;
+    // char strftime_buf[32];
     uint8_t i=0;
+    time(&t);
+ 
     while(1)
     {
         i++;
-        if(i%5==0)//every 5 seconds flush
+        // printf("Test TIME t:%ld\n",t);
+        if(i%2==0)//every 1 seconds flush
+        {
+            if(t<3600)
+            {
+                //时间校准中…
+                if(time_flag == 0) {Display_chinese16X16(72,0,13,BLACK);time_flag=1;}else if(time_flag == 1){Display_chinese16X16(72,0,13,WHITE);time_flag=0;}
+            }
+           
+        }
+        if(i%5 == 0)
+        {
+            
+            if(dht11_read_data(buffer_TH)==0)
+            {
+                humidity = (uint8_t)buffer_TH[0] + buffer_TH[1] / 10.0;
+                Temperature = buffer_TH[2] + buffer_TH[3] / 10.0;
+                printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
+            }else
+            {
+                printf("!!DHT11 Read Error!\n");
+            }
+
+            if (ESP_OK == adc_read(&Gas)) {
+                // printf("ADC value is %d\n",adc_data[0]);
+                printf("Gas is %d\n",Gas);
+            }
+
+             /*显示湿度*/
+            dsp_single_colour_x_region(48,32,24,16,BLACK);
+            sprintf(buffer,"%02d%%",humidity);
+            Display_ASCII8X16(48,32,buffer,WHITE);
+            /*开关状态*/
+            dsp_single_colour_x_region(48,64,16,16,BLACK);
+            if(controller==1)
+            {
+
+                Display_chinese16X16(48,64,6,WHITE);
+            }else if(controller==0)
+            {
+                Display_chinese16X16(48,64,7,WHITE);
+            }
+
+             /*显示温度*/
+            dsp_single_colour_x_region(48,16,40,16,BLACK);
+            sprintf(buffer,"%.2f",Temperature);
+            Display_ASCII8X16(48,16,buffer,WHITE);
+            /*显示气体*/
+            dsp_single_colour_x_region(48,48,24,16,BLACK);
+            sprintf(buffer,"%3dppm",Gas);
+            Display_ASCII8X16(48,48,buffer,WHITE);
+        }
+
+        if(i%5==0&&t>3600)//every 5 seconds flush
         {   time(&t);
             localtime_r(&t,&timeinfo);
             sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
-            dsp_single_colour_x_region(0,0,128,16,GREEN);
-            Display_ASCII8X16(0,0,buffer,RED);
+            dsp_single_colour_x_region(0,0,128,16,BLACK);
+            // Display_ASCII8X16(100,0,buffer,WHITE);
+            Display_ASCII8X16(0,0,buffer,WHITE);
+
+            Display_chinese16X16(0,16,0,WHITE);
             printf("\n%s\n",buffer);
             printf("\n%ld\n",t);
+        }
+        if(i%5==0)
+        {
+            time(&t);
         }
         if(i==99)
         {
@@ -287,10 +358,16 @@ void test_task(void* param)
     }
     free(pbuffer);
 }
+void GPIO0_D3OutputConfig(int val)
+{
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, 0);	// GPIO5设为IO口
+	GPIO_OUTPUT_SET(GPIO_ID_PIN(2), val);//主机发送val
+}
 void app_main()
 {
     time_t t;
     uint8_t i=0;
+    u8 buffer[5];
     struct tm timeinfo;
     // char buffer[17]="2020-04-22 21:38";
     // char strftime_buf[32];
@@ -301,6 +378,8 @@ void app_main()
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+
+    
     /****************************/
     Adc_Init();
     printf("MAIN1---------------------------------\n");
@@ -308,10 +387,22 @@ void app_main()
     printf("MAIN2---------------------------------\n");
     lcd_initial();
     printf("MAIN3---------------------------------\n");
-    /****************************/
-    // now_tick=xTaskGetTickCount();
-    // vTaskDelayUntil(now_tick,500);
     dsp_single_colour(BLACK);
+    /****************************/
+    /*时间校准中…*/
+    Display_chinese16X16(0,0,8,WHITE);Display_chinese16X16(16,0,9,WHITE);Display_chinese16X16(32,0,10,WHITE);Display_chinese16X16(48,0,11,WHITE);Display_chinese16X16(60,0,12,WHITE);
+    Display_chinese16X16(72,0,13,WHITE);
+    /*温度:*/
+    Display_chinese16X16(0,16,0,WHITE);Display_chinese16X16(16,16,1,WHITE);Display_chinese16X16(32,16,2,WHITE);Display_chinese16X16(96,16,22,WHITE);
+    /*湿度:*/
+    Display_chinese16X16(0,32,3,WHITE);Display_chinese16X16(16,32,1,WHITE);Display_chinese16X16(32,32,2,WHITE);Display_chinese16X16(32,16,23,WHITE);
+    /*气体:*/
+    Display_chinese16X16(0,48,4,WHITE);Display_chinese16X16(16,48,5,WHITE);Display_chinese16X16(32,48,2,WHITE);
+    /*开关:*/
+    Display_chinese16X16(0,64,6,WHITE);Display_chinese16X16(16,64,7,WHITE);Display_chinese16X16(32,64,2,WHITE);
+
+    // Display_Image(0,80,20,10,wifi_image);
+    
     vTaskDelay(1000/portTICK_PERIOD_MS);
     ets_delay_us(1000000);
     my_uart_init();
@@ -345,37 +436,18 @@ void app_main()
     initialise_wifi();
     while(1)
     {
+        if(controller==0)
+            GPIO0_D3OutputConfig(0);
+        else if(controller==1)
+            GPIO0_D3OutputConfig(1);
+        
         if(mqtt_init_or_not==1&&sntp_ok_flag==1)
         {
             xTaskCreate(&My_mqtt_task,"My_mqtt_task",8192,NULL,8,NULL);
             mqtt_init_or_not=0;
             sntp_ok_flag=0;
         }
-
-        /**/
-        i++;
-        if(i%10==0)//every 5 seconds flush
-        {   //time(&t);
-            // localtime_r(&t,&timeinfo);
-            // sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
-            // snprintf(buffer,16,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
-            // dsp_single_colour_x_region(0,0,128,16,GREEN);
-            // Display_ASCII8X16(0,0,buffer,RED);
-            //printf("\n%s\n",buffer);
-            //printf("\n%ld\n",t);
-            // strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-            //ESP_LOGI(TAG, "The current date/time in Shanghai is: %s", strftime_buf);
-            // Display_ASCII8X16(0,0,buffer,RED);
-            // printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
-           
-            i=0;
-        }
-         if (ESP_OK == adc_read(&adc_data[0])) {
-                // printf("%d\n",adc_data[0]);
-            }
-       
-        /**/
-            
+   
         switch(my_uart_event.event_type){
         case FUN_MY_OTA: 
             printf("Execute OTA!\n");
@@ -399,6 +471,22 @@ void app_main()
             
         default :
             break;
+        }
+        /**/
+        i++;
+        // if(i%11==0)//every 5 seconds flush
+        // // {
+        //    if(dht11_read_data(buffer)==0)
+        //     {
+        //         humidity = (uint8_t)buffer[0] + buffer[1] / 10.0;
+        //         Temperature = buffer[2] + buffer[3] / 10.0;
+        //         printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
+        //     }
+        // }
+        if(i%20==0)//every 5 seconds flush
+        {
+           printf("CONTROLLER is %d\n",controller);
+            i=0;
         }
         my_uart_event.event_type=0;
         vTaskDelay(1000/portTICK_PERIOD_MS);

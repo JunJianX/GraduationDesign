@@ -57,6 +57,7 @@ static void iotx_mqtt_report_funcs(void *pclient)
 #if !defined(ATHOST_MQTT_REPORT_DISBALED) && !defined(MUTE_VERSION_REPORT)
     int err;
     iotx_set_report_func(IOT_MQTT_Publish_Simple);
+    ///////////
     err = iotx_report_firmware_version(pclient);
     if (err < STATE_SUCCESS) {
     }
@@ -408,7 +409,7 @@ void *IOT_MQTT_Construct(iotx_mqtt_param_t *pInitParams)
 //         vTaskDelay(1);
 //     }
 #ifndef ASYNC_PROTOCOL_STACK
-    // iotx_mqtt_report_funcs(pclient);
+    iotx_mqtt_report_funcs(pclient);
 #endif
     ////////////////
     g_mqtt_client = pclient;

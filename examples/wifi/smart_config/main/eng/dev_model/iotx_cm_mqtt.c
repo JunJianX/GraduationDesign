@@ -199,7 +199,7 @@ static void iotx_cloud_conn_mqtt_event_handle(void *pcontext, void *pclient, iot
             iotx_mqtt_topic_info_pt topic_info = (iotx_mqtt_topic_info_pt)msg->msg;
             iotx_cm_data_handle_cb topic_handle_func = (iotx_cm_data_handle_cb)pcontext;
             char *topic = NULL;
-
+            printf("iotx_cm_mqtt.c line 202\n\n\n");
             if (topic_handle_func == NULL) {
                 iotx_state_event(ITE_STATE_DEV_MODEL, STATE_DEV_MODEL_RECV_UNEXP_MQTT_PUB, "unexpected pub message received");
                 return;

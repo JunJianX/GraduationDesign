@@ -10,6 +10,7 @@
 #include "dht11.h"
 #include "my_delay.h"
 #include "my_gpio.h"
+#include "esp_timer.h"
 // 全局变量
 //==================================================================================
 // DHT11_Data_Array[0] == 湿度_整数_部分
@@ -63,14 +64,16 @@ u8 Dht11Star(void)
 {
 	u8 UsFlag = 0;
 	Dht11OutputConfig(1);//
-	DelayMs(1);
+	// DelayMs(1);
 
 	//起始信号 -- 主机把数据总线拉低 T(18ms < T < 30ms)， 通知传感器准备数据
 	Dht11OutputConfig(0);
-	DelayMs(20);
+	printf("\n%f\n",(double)(esp_timer_get_time()/1000));
+	DelayMs(19);//DelayMs(22);
+	printf("\n%f\n",(double)(esp_timer_get_time()/1000));
 	//释放总线
 	Dht11OutputConfig(1);
-	DelayUs(5);
+	DelayUs(30);// DelayUs(5);
 
 	//接受响应信号
 	//设置为输入模式，才能接收信号
@@ -113,27 +116,44 @@ u8 Dht11Star(void)
 u8 DHT11ReadBit(void)
 {
 	u8 UsFlag = 0;	// 延时计时
-
+	u8 i;
 					// 等待响应信息的低电平【最迟等150us】
-	while (GPIO_INPUT_GET(GPIO_ID_PIN(5)) == 1 && UsFlag<150)
-	{
-		DelayUs(1);		// 1us计时
-		UsFlag++;
-	}
-	UsFlag = 0;		// 低电平计时开始
-					// 数据位的低电平时长计时【最多200us】
-	while (GPIO_INPUT_GET(GPIO_ID_PIN(5)) == 0 && UsFlag<120)
-	{
-		DelayUs(1);
-		UsFlag++;	// 低电平时长
-	}
+	// while (GPIO_INPUT_GET(GPIO_ID_PIN(5)) == 1 && UsFlag<150)
+	// {
+	// 	DelayUs(1);		// 1us计时
+	// 	UsFlag++;
+	// }
+	// UsFlag = 0;		// 低电平计时开始
+	// 				// 数据位的低电平时长计时【最多200us】
+	// while (GPIO_INPUT_GET(GPIO_ID_PIN(5)) == 0 && UsFlag<120)
+	// {
+	// 	DelayUs(1);
+	// 	UsFlag++;	// 低电平时长
+	// }
+	
 	// 数据位的低电平结束后，是数据位的高电平
 	// 数据"0"的高电平时长 == [23～27us]
 	// 数据"1"的高电平时长 == [68～74us]
-	DelayUs(45);	// 跳过数据"0"的高电平部分
+	// DelayUs(45);	// 跳过数据"0"的高电平部分
 
 					// 延时45us后，检测信号线电平 此时电平为高就输出数据1 电平为低就输出数据0
-	return GPIO_INPUT_GET(GPIO_ID_PIN(5));
+	// return GPIO_INPUT_GET(GPIO_ID_PIN(5));
+	while(GPIO_INPUT_GET(GPIO_ID_PIN(5))==0);
+	DelayUs(40);
+	if(GPIO_INPUT_GET(GPIO_ID_PIN(5))==1)
+	{
+		// while(GPIO_INPUT_GET(GPIO_ID_PIN(5))==1&&UsFlag<240)
+		// {
+		// 	DelayUs(1);
+		// 	UsFlag++;
+		// }
+		while(GPIO_INPUT_GET(GPIO_ID_PIN(5))==1);
+		return 1;
+	}else
+	{
+		return 0;
+	}
+	
 }
 
 /*

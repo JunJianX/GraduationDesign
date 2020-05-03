@@ -5,12 +5,12 @@
 #include "dev_sign_api.h"
 #include "mqtt_api.h"
 #include "wrappers.h"
+#include "time.h"
 
-
-char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1GPsB9z5fS";
-char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "BKs6DK4ldvOivubV";//
-char g_device_name[IOTX_DEVICE_NAME_LEN + 1]       = "TEST1";
-char g_device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "cUiM5MwKXNPovwE5D8YSNmBgqI1nUWAG";
+char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1bV9YKyW1v";
+char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "KcForemK5TuiBdT1";//
+char g_device_name[IOTX_DEVICE_NAME_LEN + 1]       = "kwEQ1yKOzDvLkbrO022t";
+char g_device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "BH9sHBHxNIXlO7AAoZwmfLYOi1vbWOI9";
 /*
 char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1MZxOdcBnO";
 char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "h4I4dneEFp7EImTv";//
@@ -45,7 +45,7 @@ int example_subscribe(void *handle)
 {
     int res = 0;
     // const char *fmt = "/%s/%s/user/up";
-    const char *fmt = "/sys/%s/%s/thing/event/property/post_reply";
+    const char *fmt = "/sys/%s/%s/thing/service/property/set";
     char *topic = NULL;
     int topic_len = 0;
 
@@ -70,17 +70,30 @@ int example_subscribe(void *handle)
     HAL_Free(topic);
     return 0;
 }
-
+#define PAYLOAD_LEN  200
 int example_publish(void *handle)
 {
+
+    extern float Temperature;
+    extern uint8_t humidity;
+    extern int Gas;  
+    extern uint8_t controller;
+    time_t t;
+
     int             res = 0;
     // const char     *fmt = "/%s/%s/user/up";
+    // /a1GPsB9z5fS/${deviceName}/user/contrl
     const char     *fmt = "/sys/%s/%s/thing/event/property/post";
+    // const char     *fmt = "";
     char           *topic = NULL;
     int             topic_len = 0;
+    int             payload_len = 0;
     // char           *payload = "{\"message\":\"hello!\"}";
-    char           *payload = "{\"Temperature\": 1.23}";
+    // char           *payload_fmt = "{\"Temperature\": %.2f,\"Humidity\":%d,\"Gas\":%d}";
+    char           *payload_fmt = "{\"id\":%ld,\"params\":{\"tempreature\":%f,\"humidity\":%d,\"gas_check\":%d,\"switch\":%d},\"method\":\"thing.event.property.post\"}";
+    char           *payload = NULL;// = "{\"Temperature\": %2f,\"humidity\":%d%%}";
 
+    time(&t);
     topic_len = strlen(fmt) + strlen(g_product_key) + strlen(g_device_name) + 1;
     topic = HAL_Malloc(topic_len);
     if (topic == NULL) {
@@ -89,6 +102,17 @@ int example_publish(void *handle)
     }
     memset(topic, 0, topic_len);
     HAL_Snprintf(topic, topic_len, fmt, g_product_key, g_device_name);
+
+    payload = HAL_Malloc(PAYLOAD_LEN);
+    if(payload == NULL)
+    {
+        EXAMPLE_TRACE("payload memory not enough");
+        return -1; 
+    }
+    memset(payload,0,PAYLOAD_LEN);
+    // sprintf(payload,payload_fmt,Temperature,humidity,Gas);
+    sprintf(payload,payload_fmt,t,Temperature,humidity,Gas,controller);
+    printf("\n%s\n",payload);
 
     printf("Publish payload:\n");
     res = IOT_MQTT_Publish_Simple(0, topic, IOTX_MQTT_QOS0, payload, strlen(payload));
@@ -99,12 +123,17 @@ int example_publish(void *handle)
     }
 
     HAL_Free(topic);
+    HAL_Free(payload);
     return 0;
 }
 
+
 void example_event_handle(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg)
 {
+    iotx_mqtt_topic_info_t     *topic_info = (iotx_mqtt_topic_info_pt) msg->msg;
     EXAMPLE_TRACE("msg->event_type : %d", msg->event_type);
+    printf("Payload:%s",topic_info->payload);
+    // printf("MSG:%s\n",(char *)msg->msg);
 }
 
 extern const char *IOT_Extension_StateDesc(const int);
@@ -124,14 +153,14 @@ int everything_state_handle(const int state_code, const char *state_message)
      */
 
     
-     /*   EXAMPLE_TRACE("recv -0x%04X(%s), means '%s'",
+        EXAMPLE_TRACE("recv -0x%04X(%s), means '%s'",
                       -state_code,
                       state_message,
-                      IOT_Extension_StateDesc(state_code));*/
+                      IOT_Extension_StateDesc(state_code));
    
-    EXAMPLE_TRACE("recv -0x%04X(%s)",
+    /*EXAMPLE_TRACE("recv -0x%04X(%s)",
                   -state_code,
-                  state_message); 
+                  state_message); */
     return 0;
 }
 
@@ -154,7 +183,142 @@ int identity_response_handle(const char *payload)
  *  For new devices created by yourself, pub/sub privilege also requires being granted
  *  to its /${productKey}/${deviceName}/user/get for successfully running whole example
  */
+void property_set_event_handle(const int devid, const char *serviceid, const int serviceid_len,
+        const char *request, const int request_len,
+        char **response, int *response_len)
+{
+    printf("+++++++++++++++++++++++++++++++++++++++\n");
+    // iotx_mqtt_topic_info_t     *topic_info = (iotx_mqtt_topic_info_pt) msg->msg;
+    // EXAMPLE_TRACE("msg->event_type : %d", msg->event_type);
+    // printf("RECV:\n%s\n",topic_info->payload);
+    // printf("%s\n",request);
+    printf("Service Request Received, Devid: %d, Service ID: %.*s, Payload: %s", devid, serviceid_len, serviceid, request);
 
+}
+/*
+void example_message_arrive(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg)
+{
+    iotx_mqtt_topic_info_t     *topic_info = (iotx_mqtt_topic_info_pt) msg->msg;
+    printf("\n-------------------example_message_arrive------------------\n");
+    switch (msg->event_type) {
+        case IOTX_MQTT_EVENT_PUBLISH_RECEIVED:
+             //print topic name and topic message 
+            EXAMPLE_TRACE("Message Arrived:");
+            EXAMPLE_TRACE("Topic  : %.*s", topic_info->topic_len, topic_info->ptopic);
+            EXAMPLE_TRACE("Payload: %.*s", topic_info->payload_len, topic_info->payload);
+            EXAMPLE_TRACE("\n");
+            break;
+        default:
+            break;
+    }
+}
+*/
+
+void parse_packet(uint16_t topic_len,const char * topic,uint16_t payload_len,const char *payload)
+{
+    extern uint8_t controller;
+    int mul=1;
+    uint8_t result=0;
+    char *first_p_t=NULL;
+    char *first_p_p=NULL;
+    char *end_p_p=NULL;
+    if( topic==NULL||topic_len==0||payload_len == 0||payload==NULL)
+    {
+        return;
+    }
+    first_p_t = strstr(topic,"/thing/service/");
+    first_p_p = strstr(payload,"param1");
+    //{"param1":1234}
+    if(first_p_t==NULL||first_p_p==NULL)
+    {
+        printf("no nedd  parse_packet!\n");
+        return;
+    }
+    end_p_p = first_p_p+8;
+    while(*(end_p_p+1)!='}')
+    {
+        end_p_p++;
+    }
+    while(end_p_p>=first_p_p+8)
+    {
+
+        result+=mul*(*end_p_p-'0');
+        mul*=10;
+        end_p_p--;
+    }
+    controller = result;
+    printf("get from cloud \"param\": %d",result);
+
+
+}
+void event_handle_mqtt(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg)
+{
+    uintptr_t packet_id = (uintptr_t)msg->msg;
+    iotx_mqtt_topic_info_pt topic_info = (iotx_mqtt_topic_info_pt)msg->msg;
+
+    switch (msg->event_type) {
+        case IOTX_MQTT_EVENT_UNDEF:
+            printf("undefined event occur.");
+            break;
+
+        case IOTX_MQTT_EVENT_DISCONNECT:
+            printf("MQTT disconnect.");
+            break;
+
+        case IOTX_MQTT_EVENT_RECONNECT:
+            printf("MQTT reconnect.");
+            break;
+
+        case IOTX_MQTT_EVENT_SUBCRIBE_SUCCESS:
+            printf("subscribe success, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_SUBCRIBE_TIMEOUT:
+            printf("subscribe wait ack timeout, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_SUBCRIBE_NACK:
+            printf("subscribe nack, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_UNSUBCRIBE_SUCCESS:
+            printf("unsubscribe success, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_UNSUBCRIBE_TIMEOUT:
+            printf("unsubscribe timeout, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_UNSUBCRIBE_NACK:
+            printf("unsubscribe nack, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_PUBLISH_SUCCESS:
+            printf("publish success, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_PUBLISH_TIMEOUT:
+            printf("publish timeout, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_PUBLISH_NACK:
+            printf("publish nack, packet-id=%u", (unsigned int)packet_id);
+            break;
+
+        case IOTX_MQTT_EVENT_PUBLISH_RECEIVED:
+            printf("topic message arrived but without any related handle: topic=%.*s, topic_msg=%.*s\n",
+                          topic_info->topic_len,
+                          topic_info->ptopic,
+                          topic_info->payload_len,
+                          topic_info->payload);
+            parse_packet(topic_info->topic_len,topic_info->ptopic,topic_info->payload_len,topic_info->payload);
+            break;
+
+        default:
+            printf("Should NOT arrive here.");
+            break;
+    }
+}
 void My_mqtt_task(void /**parm*/)
 {
     void                   *pclient = NULL;
@@ -168,6 +332,9 @@ void My_mqtt_task(void /**parm*/)
 
     IOT_RegisterCallback(ITE_IDENTITY_RESPONSE, identity_response_handle);
     IOT_RegisterCallback(ITE_STATE_EVERYTHING, everything_state_handle);
+    // IOT_RegisterCallback(ITE_SERVICE_REQUEST, property_set_event_handle);
+    // IOT_RegisterCallback(ITE_SERVICE_REQUEST, property_set_event_handle);
+
 
     // printf("\nhello mqtt!\n");
     EXAMPLE_TRACE("mqtt example");
@@ -175,7 +342,8 @@ void My_mqtt_task(void /**parm*/)
     memset(&mqtt_params, 0x0, sizeof(mqtt_params));
     // printf("\nline 164\n");
    
-    mqtt_params.handle_event.h_fp = example_event_handle;
+    // mqtt_params.handle_event.h_fp = example_event_handle;
+    mqtt_params.handle_event.h_fp = event_handle_mqtt;
 
     pclient = IOT_MQTT_Construct(&mqtt_params);
     // printf("\nline 169\n");
@@ -188,20 +356,21 @@ void My_mqtt_task(void /**parm*/)
     IOT_Ioctl(IOTX_IOCTL_GET_PRODUCT_KEY, g_product_key);
     IOT_Ioctl(IOTX_IOCTL_GET_DEVICE_NAME, g_device_name);
 
-    /*res = example_subscribe(pclient);
+    res = example_subscribe(pclient);
     if (res < 0) {
         IOT_MQTT_Destroy(&pclient);
         return ;
-    }*/
+    }
 
     while (1) {
-        if (0 == loop_cnt % 20) {
+        if (0 == loop_cnt % (253)) {
             example_publish(pclient);
         }
 
         IOT_MQTT_Yield(pclient, 200);
 
         loop_cnt += 1;
+        
     }
 
     return ;

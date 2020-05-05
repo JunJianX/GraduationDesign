@@ -1,3 +1,6 @@
+sudo python /home/xu/esp/ESP8266_RTOS_SDK/components/esptool_py/esptool/esptool.py --port /dev/ttyUSB0 erase_flash
+
+
 # smartconfig Example
 
 This example shows how ESP8266 connects to AP with ESPTOUCH. Example does the following steps:

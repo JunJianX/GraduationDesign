@@ -7,6 +7,7 @@ static const char *TAG = "uart_events";
 
 #define BUF_SIZE (130)
 #define RD_BUF_SIZE (BUF_SIZE)
+extern uint8_t ota_start_flag;
 static QueueHandle_t uart0_queue;
 parse_event_struct_t my_uart_event;
  parse_event_struct_t Parse(uint8_t *s)
@@ -18,7 +19,7 @@ parse_event_struct_t my_uart_event;
     char ip[16]="";
     int port = 0;
     char temp[5] ="";
-    if(strcmp((char*)s,"ota")==0) {t.event_type =FUN_MY_OTA; return t;}
+    if(strcmp((char*)s,"ota")==0) {t.event_type =FUN_MY_OTA; ota_start_flag =1;return t;}
     if(strcmp((char*)s,"reboot")==0) {t.event_type =FUN_REBOOT;return t;}
     if(strcmp((char*)s,"left")==0) {t.event_type = FUN_LEFT;return t;}
     if(strcmp((char*)s,"right")==0) {t.event_type = FUN_RIGHT;return t;}

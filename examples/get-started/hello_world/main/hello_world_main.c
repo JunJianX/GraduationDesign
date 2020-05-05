@@ -25,6 +25,7 @@
 #define u8 unsigned char
 uint16_t adc_data[20];
 extern u8 DHT11_Data_Array[6];
+extern const unsigned char wifi_image[];
 void display()
 {
         char s_adc[20]="";
@@ -115,7 +116,7 @@ void app_main()
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);*/
     // Dht11OutputConfig(1);
-    vTaskDelay(3000/portTICK_PERIOD_MS);
+    vTaskDelay(1000/portTICK_PERIOD_MS);
     // Dht11OutputConfig(0);
     // vTaskDelay(10000/portTICK_PERIOD_MS);
     // Dht11OutputConfig(1);
@@ -130,7 +131,8 @@ void app_main()
         //     temp = buffer[2] + buffer[3] / 10.0;
         //     printf("___{\"temperature\": %.2f, \"humidness\": %.2f}___\n\r", temp, hum);
         // }
-        Display_Image(0,0,128,128,gImage_image);
+        // Display_Image(0,0,20,10,wifi_image);
+         Display_Image(0,0,128,128,gImage_image);
 
 
             // GPIO_set_mode(1);

@@ -1,11 +1,17 @@
 #include "my_mqtt_client.h"
 
 #include <string.h>
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/event_groups.h"
 #include "infra_compat.h"
 #include "dev_sign_api.h"
 #include "mqtt_api.h"
 #include "wrappers.h"
 #include "time.h"
+
+extern uint8_t aliyun_flag;
+extern uint8_t ota_start_flag;
 
 char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1bV9YKyW1v";
 char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "KcForemK5TuiBdT1";//
@@ -76,7 +82,7 @@ int example_publish(void *handle)
 
     extern float Temperature;
     extern uint8_t humidity;
-    extern int Gas;  
+    extern uint16_t Gas;  
     extern uint8_t controller;
     time_t t;
 
@@ -119,8 +125,10 @@ int example_publish(void *handle)
     if (res < 0) {
         EXAMPLE_TRACE("publish failed, res = %d", res);
         HAL_Free(topic);
+        aliyun_flag = 0;
         return -1;
     }
+    aliyun_flag=1;
 
     HAL_Free(topic);
     HAL_Free(payload);
@@ -352,7 +360,7 @@ void My_mqtt_task(void /**parm*/)
         return ;
     }
     // printf("\nline 174\n");
-
+    aliyun_flag = 1;
     IOT_Ioctl(IOTX_IOCTL_GET_PRODUCT_KEY, g_product_key);
     IOT_Ioctl(IOTX_IOCTL_GET_DEVICE_NAME, g_device_name);
 
@@ -360,11 +368,16 @@ void My_mqtt_task(void /**parm*/)
     if (res < 0) {
         IOT_MQTT_Destroy(&pclient);
         return ;
+        aliyun_flag = 0;
     }
 
     while (1) {
         if (0 == loop_cnt % (253)) {
             example_publish(pclient);
+        }
+        if(ota_start_flag==1)
+        {
+            vTaskDelete(NULL);
         }
 
         IOT_MQTT_Yield(pclient, 200);

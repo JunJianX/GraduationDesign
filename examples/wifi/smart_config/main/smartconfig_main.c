@@ -45,10 +45,13 @@ int mqtt_init_or_not=0;
 const int CONNECTED_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
-
+static const char *version = "ver 1.1";
+uint8_t ota_start_flag = 0;
 uint8_t sntp_flag =1;
 uint8_t fun_left_flag = 0;
 uint8_t fun_right_flag = 0;
+uint8_t aliyun_flag = 0,aliyun_flag_last=0;
+uint8_t net_flag = 0,net_flag_last=0;
 
 float Temperature=13.12;
 uint8_t humidity=50;
@@ -60,7 +63,8 @@ char *ssid=NULL;
 // TaskHandle_t sntp_handle;
 extern parse_event_struct_t my_uart_event;
 extern int sntp_ok_flag;
-extern const unsigned char wifi_image[748] ;
+extern const unsigned char wifi_image[] ;
+extern const unsigned char aliyun_image[] ;
 void smartconfig_example_task(void * parm);
 
 void clear_uart_event(void)
@@ -133,6 +137,7 @@ static esp_err_t My_wifi_init(void *ctx,system_event_t *event)
             // xTaskCreate(&smartconfig_example_task,"smartconfig_example_task", 1024+1024, NULL, 7, NULL);break;
         
         case SYSTEM_EVENT_STA_GOT_IP:
+            net_flag=1;
             printf("---------------------\n");
             printf("GOT IP!\n");
             xEventGroupSetBits(wifi_event_group, CONNECTED_BIT);
@@ -150,11 +155,13 @@ static esp_err_t My_wifi_init(void *ctx,system_event_t *event)
             printf("---------------------\n");
             break;
         case SYSTEM_EVENT_STA_DISCONNECTED:
+            net_flag=0;
             printf("---------------------\n");
             printf("DISCONNECTED!Trying \n");
             xEventGroupClearBits(wifi_event_group, CONNECTED_BIT);
             esp_wifi_connect();
             printf("---------------------\n");
+
             break;
         default:break;
 
@@ -270,74 +277,97 @@ void display_task(void * parm)
     {
         i++;
         // printf("Test TIME t:%ld\n",t);
-        if(i%2==0)//every 1 seconds flush
+        if(ota_start_flag==0)
         {
-            if(t<3600)
+            if(i%2==0)//every 1 seconds flush
             {
-                //时间校准中…
-                if(time_flag == 0) {Display_chinese16X16(72,0,13,BLACK);time_flag=1;}else if(time_flag == 1){Display_chinese16X16(72,0,13,WHITE);time_flag=0;}
-            }
-           
-        }
-        if(i%5 == 0)
-        {
+                if(t<3600)
+                {
+                    //时间校准中…
+                    if(time_flag == 0) {Display_chinese16X16(72,0,13,BLACK);time_flag=1;}else if(time_flag == 1){Display_chinese16X16(72,0,13,WHITE);time_flag=0;}
+                }
             
-            if(dht11_read_data(buffer_TH)==0)
+            }
+            if(i%5 == 0)
             {
-                humidity = (uint8_t)buffer_TH[0] + buffer_TH[1] / 10.0;
-                Temperature = buffer_TH[2] + buffer_TH[3] / 10.0;
-                printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
-            }else
-            {
-                printf("!!DHT11 Read Error!\n");
+                
+                if(dht11_read_data(buffer_TH)==0)
+                {
+                    humidity = (uint8_t)buffer_TH[0] + buffer_TH[1] / 10.0;
+                    Temperature = buffer_TH[2] + buffer_TH[3] / 10.0;
+                    printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
+                }else
+                {
+                    printf("!!DHT11 Read Error!\n");
+                }
+
+                if (ESP_OK == adc_read(&Gas)) {
+                    // printf("ADC value is %d\n",adc_data[0]);
+                    printf("Gas is %d\n",Gas);
+                }
+
+                /*显示湿度*/
+                dsp_single_colour_x_region(48,32,24,16,BLACK);
+                sprintf(buffer,"%02d%%",humidity);
+                Display_ASCII8X16(48,32,buffer,WHITE);
+                /*开关状态*/
+                dsp_single_colour_x_region(48,64,16,16,BLACK);
+                if(controller==1)
+                {
+
+                    Display_chinese16X16(48,64,6,WHITE);
+                }else if(controller==0)
+                {
+                    Display_chinese16X16(48,64,7,WHITE);
+                }
+
+                /*显示温度*/
+                dsp_single_colour_x_region(48,16,40,16,BLACK);
+                sprintf(buffer,"%.2f",Temperature);
+                Display_ASCII8X16(48,16,buffer,WHITE);
+                /*显示气体*/
+                dsp_single_colour_x_region(48,48,24,16,BLACK);
+                sprintf(buffer,"%3dppm",Gas);
+                Display_ASCII8X16(48,48,buffer,WHITE);
             }
 
-            if (ESP_OK == adc_read(&Gas)) {
-                // printf("ADC value is %d\n",adc_data[0]);
-                printf("Gas is %d\n",Gas);
+            if(i%5==0&&t>3600)//every 5 seconds flush
+            {   time(&t);
+                localtime_r(&t,&timeinfo);
+                sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
+                dsp_single_colour_x_region(0,0,128,16,BLACK);
+                // Display_ASCII8X16(100,0,buffer,WHITE);
+                Display_ASCII8X16(0,0,buffer,WHITE);
+
+                Display_chinese16X16(0,16,0,WHITE);
+                printf("\n%s\n",buffer);
+                printf("\n%ld\n",t);
             }
-
-             /*显示湿度*/
-            dsp_single_colour_x_region(48,32,24,16,BLACK);
-            sprintf(buffer,"%02d%%",humidity);
-            Display_ASCII8X16(48,32,buffer,WHITE);
-            /*开关状态*/
-            dsp_single_colour_x_region(48,64,16,16,BLACK);
-            if(controller==1)
+            if(i%5==0)
             {
-
-                Display_chinese16X16(48,64,6,WHITE);
-            }else if(controller==0)
-            {
-                Display_chinese16X16(48,64,7,WHITE);
+                time(&t);
             }
-
-             /*显示温度*/
-            dsp_single_colour_x_region(48,16,40,16,BLACK);
-            sprintf(buffer,"%.2f",Temperature);
-            Display_ASCII8X16(48,16,buffer,WHITE);
-            /*显示气体*/
-            dsp_single_colour_x_region(48,48,24,16,BLACK);
-            sprintf(buffer,"%3dppm",Gas);
-            Display_ASCII8X16(48,48,buffer,WHITE);
-        }
-
-        if(i%5==0&&t>3600)//every 5 seconds flush
-        {   time(&t);
-            localtime_r(&t,&timeinfo);
-            sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
-            dsp_single_colour_x_region(0,0,128,16,BLACK);
-            // Display_ASCII8X16(100,0,buffer,WHITE);
-            Display_ASCII8X16(0,0,buffer,WHITE);
-
-            Display_chinese16X16(0,16,0,WHITE);
-            printf("\n%s\n",buffer);
-            printf("\n%ld\n",t);
-        }
-        if(i%5==0)
+        }else if(ota_start_flag==1)
         {
-            time(&t);
+            dsp_single_colour(BLACK);
+            Display_chinese16X16(0,0,25,WHITE);Display_chinese16X16(16,0,26,WHITE);Display_chinese16X16(32,0,27,WHITE);Display_chinese16X16(48,0,28,WHITE);
+            i=0;
+            while(1)
+            {
+                if(i==4)
+                {
+                    i=0;
+                    Display_chinese16X16(72,0,13,BLACK);
+                }else if(i==2)
+                {
+                    Display_chinese16X16(72,0,13,WHITE);
+                }
+
+                i++;
+                vTaskDelay(1000/portTICK_PERIOD_MS);
+            }
         }
+        
         if(i==99)
         {
             i=0;
@@ -363,6 +393,12 @@ void GPIO0_D3OutputConfig(int val)
 	PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, 0);	// GPIO5设为IO口
 	GPIO_OUTPUT_SET(GPIO_ID_PIN(2), val);//主机发送val
 }
+void show_ota_picture(void)
+{
+    dsp_single_colour(BLACK);
+    Display_chinese16X16(0,0,25,WHITE);Display_chinese16X16(16,0,26,WHITE);Display_chinese16X16(32,0,27,WHITE);Display_chinese16X16(48,0,28,WHITE);
+
+}
 void app_main()
 {
     time_t t;
@@ -378,8 +414,11 @@ void app_main()
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+    /**/
+    printf("/***************************/\n");
+    printf("%s\n",version);
+    printf("/***************************/\n");
 
-    
     /****************************/
     Adc_Init();
     printf("MAIN1---------------------------------\n");
@@ -400,8 +439,9 @@ void app_main()
     Display_chinese16X16(0,48,4,WHITE);Display_chinese16X16(16,48,5,WHITE);Display_chinese16X16(32,48,2,WHITE);
     /*开关:*/
     Display_chinese16X16(0,64,6,WHITE);Display_chinese16X16(16,64,7,WHITE);Display_chinese16X16(32,64,2,WHITE);
-
-    // Display_Image(0,80,20,10,wifi_image);
+    /*版本*/
+    Display_chinese16X16(0,80,23,WHITE);Display_chinese16X16(16,80,24,WHITE);Display_chinese16X16(32,80,2,WHITE);Display_ASCII8X16(48,80,version,WHITE);
+     
     
     vTaskDelay(1000/portTICK_PERIOD_MS);
     ets_delay_us(1000000);
@@ -436,6 +476,23 @@ void app_main()
     initialise_wifi();
     while(1)
     {
+        if(net_flag==1&&net_flag!=net_flag_last)
+        {
+            Display_Image(0,96,50,30,wifi_image);
+        }else if(net_flag == 0&&net_flag!=net_flag_last)
+        {
+            dsp_single_colour_x_region(0,96,50,30,BLACK);
+        }
+        if(aliyun_flag==1&&aliyun_flag_last!=aliyun_flag)
+        {
+            Display_Image(50,96,54,30,aliyun_image);
+        }else if(aliyun_flag == 0&&aliyun_flag_last!=aliyun_flag)
+        {
+            dsp_single_colour_x_region(50,96,54,30,BLACK);
+        }
+        aliyun_flag_last = aliyun_flag;
+        net_flag_last = net_flag;
+
         if(controller==0)
             GPIO0_D3OutputConfig(0);
         else if(controller==1)
@@ -451,6 +508,7 @@ void app_main()
         switch(my_uart_event.event_type){
         case FUN_MY_OTA: 
             printf("Execute OTA!\n");
+            show_ota_picture();
             xTaskCreate(&ota_example_task,"ota_example_task",8192,NULL,6,NULL);
             break;
         case FUN_REBOOT: 

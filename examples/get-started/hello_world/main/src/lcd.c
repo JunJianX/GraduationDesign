@@ -350,6 +350,8 @@ void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 	}     	
 }
 
+
+
 void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Image(0,0,128,128,gImage_image);
 {
 	long int max=0;long int i_max;

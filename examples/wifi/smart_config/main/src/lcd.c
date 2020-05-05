@@ -410,7 +410,6 @@ void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 	}     	
 }
 
-
 void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Image(0,0,128,128,gImage_image);
 {
 	long int max=0;long int i_max;
@@ -418,20 +417,41 @@ void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Imag
 	// Lcd_SetRegion(x0,y0,x0+width-1,y0+height-1);
 	uint i,j;
 	uint color;
-
+	uint position = 0;
 	for(i=0;i<width;i++)
 	{
 		for(j = 0;j<height;j++)
 		{
-			color=0;
-			color= (  (s[((i*width+j+1)<<1)+1]<<8 )  | ( s[(i*width+j+1)<<1])  );
+			color&=0;
+			position = 2* (j*width+i);
+			color|=  (s[position])  | ( s[position+1] <<8) ;
 			// LCD_WriteData_16Bit(color);
-			// if(max<i*width+j)
-			// 	max = i*width+j;
-			// PutPixel(x0+i,y0+j,color);
-			// printf("\t(%d)\t",i*width+j);
-			PutPixel(y0+j,x0+i,color);
+			PutPixel(x0+i,y0+j,color);
 		}
-		
 	}
 }
+// void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Image(0,0,128,128,gImage_image);
+// {
+// 	long int max=0;long int i_max;
+	
+// 	// Lcd_SetRegion(x0,y0,x0+width-1,y0+height-1);
+// 	uint i,j;
+// 	uint color;
+
+// 	for(i=0;i<width;i++)
+// 	{
+// 		for(j = 0;j<height;j++)
+// 		{
+// 			color&=0;
+// 			color|=   s[((i*width+j+1)<<1)+1]<<8;
+// 			color|= s[(i*width+j+1)<<1];
+// 			// LCD_WriteData_16Bit(color);
+// 			// if(max<i*width+j)
+// 			// 	max = i*width+j;
+// 			// PutPixel(x0+i,y0+j,color);
+// 			// printf("\t(%d)\t",i*width+j);
+// 			PutPixel(x0+i,y0+j,color);
+// 		}
+		
+// 	}
+// }

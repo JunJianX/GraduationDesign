@@ -41,9 +41,9 @@ void Save_ssid_passwd(char *ssid,char *passwd)
 
     ssidlen = strlen(ssid);
     passwdlen = strlen(passwd);
-    printf("Save_ssid_passwd1111----------->");
+    // printf("Save_ssid_passwd1111----------->");
     // ESP_LOGI("\n%s:%d,%s,%d\n",ssid,ssidlen,passwd,passwdlen);
-    printf("Save_ssid_passwd2222----------->");
+    // printf("Save_ssid_passwd2222----------->");
 
     spi_flash_erase_sector(FLASH_FACTORY_PASSWORD_ADDR/1000);
     spi_flash_write(FLASH_FACTORY_PASSWORD_ADDR,(uint32_t *)&passwdlen,4);

@@ -308,21 +308,8 @@ void dsp_single_colour(int color)
 
 void Display_chinese16X16(uint x0,uint y0,uint s,uint color)
 {
-/*
-0x08
-0000 1000
-0x20
-0010 0000
-
-0x0820
-0000 1000 0010 0000
-
-*/
-	int i=0,j,k,x,y,xx;
-	unsigned char qm;
-	long int ulOffset;
+	int x,y;
 	uint8_t postion=0;
-	char  ywbuf[32],temp[2];
 	uint font = 0;
 	//chinese16x16
 	for(x = 0;x < 16;x++)
@@ -347,6 +334,25 @@ void Display_chinese16X16(uint x0,uint y0,uint s,uint color)
 		}
 	}
 	 	
+}
+void Display_chinese24x24(uint x0,uint y0,uint s,uint color)
+{
+	uint16_t x=0,y=0;
+	uint8_t position = 0;
+	uint32_t font = 0;
+	for(x = 0;x<24;x++)
+	{
+		font = 0;
+		position = x*3;
+		font = (chinese24x24[s][position]<<16)|(chinese24x24[s][position+1]<<8)|(chinese24x24[s][position+2]);
+		for (y=0;y<24;y++)
+		{
+			if(font&(0x800000>>y))
+			{
+				PutPixel(x0+x,y+y0,color);
+			}
+		}
+	}
 }
 void Display_ASCII8X16(uint x0,uint y0,char *s,uint color)
 {

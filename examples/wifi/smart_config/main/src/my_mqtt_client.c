@@ -346,6 +346,7 @@ void My_mqtt_task(void /**parm*/)
 
     // printf("\nhello mqtt!\n");
     EXAMPLE_TRACE("mqtt example");
+    printf("++++++++++++++++++++++++++\n-------------------------\n");
 
     memset(&mqtt_params, 0x0, sizeof(mqtt_params));
     // printf("\nline 164\n");
@@ -377,6 +378,7 @@ void My_mqtt_task(void /**parm*/)
         }
         if(ota_start_flag==1)
         {
+            printf("DELETE My_mqtt_task!\n\n");
             vTaskDelete(NULL);
         }
 

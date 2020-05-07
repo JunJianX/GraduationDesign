@@ -37,6 +37,8 @@
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 EventGroupHandle_t wifi_event_group;
+EventGroupHandle_t boot_status_group;
+const int BOOT_BIT = BIT0;
 int WiFi_Init_Or_Not=0;
 int mqtt_init_or_not=0;
 /* The event group allows multiple bits for each event,
@@ -51,7 +53,7 @@ uint8_t sntp_flag =1;
 uint8_t fun_left_flag = 0;
 uint8_t fun_right_flag = 0;
 uint8_t aliyun_flag = 0,aliyun_flag_last=0;
-uint8_t net_flag = 0,net_flag_last=0;
+uint8_t net_flag = 0,net_flag_last=0,time_symbol_initial=0;
 
 float Temperature=13.12;
 uint8_t humidity=50;
@@ -264,10 +266,12 @@ void smartconfig_example_task(void * parm)
 
 void display_task(void * parm)
 {   
+    u8 start_t=0;
     struct tm timeinfo;
     time_t t=0;
+    u8 last_sec=61,last_min=61,last_hour=25,last_day=32,last_month=13;
     u8 buffer_TH[5];
-    char buffer[17]="";
+    char buffer[3]="";
     uint8_t time_flag = 0;
     // char strftime_buf[32];
     uint8_t i=0;
@@ -279,6 +283,7 @@ void display_task(void * parm)
         // printf("Test TIME t:%ld\n",t);
         if(ota_start_flag==0)
         {
+            time(&t);
             if(i%2==0)//every 1 seconds flush
             {
                 if(t<3600)
@@ -331,17 +336,64 @@ void display_task(void * parm)
                 Display_ASCII8X16(48,48,buffer,WHITE);
             }
 
-            if(i%5==0&&t>3600)//every 5 seconds flush
-            {   time(&t);
+            if(/*i%5==0&&*/t>3600)//every 5 seconds flush
+            {   
                 localtime_r(&t,&timeinfo);
-                sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
+                /*sprintf(buffer,"%4d-%02d-%02d %02d:%02d",timeinfo.tm_year+1900,timeinfo.tm_mon+1,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min);
                 dsp_single_colour_x_region(0,0,128,16,BLACK);
                 // Display_ASCII8X16(100,0,buffer,WHITE);
                 Display_ASCII8X16(0,0,buffer,WHITE);
 
                 Display_chinese16X16(0,16,0,WHITE);
                 printf("\n%s\n",buffer);
-                printf("\n%ld\n",t);
+                printf("\n%ld\n",t);*/
+                if(time_symbol_initial==0)
+                {
+                    dsp_single_colour_x_region(0,0,128,16,BLACK);
+                    Display_ASCII8X16(0,0,"  -     :  :  ",WHITE);
+                    time_symbol_initial = 1;
+                }
+                if(timeinfo.tm_sec!=last_sec)
+                {
+                    sprintf(buffer,"%02d",timeinfo.tm_sec);
+                    dsp_single_colour_x_region(96,0,16,16,BLACK);
+                    Display_ASCII8X16(96,0,buffer,WHITE);
+                    // printf("last_sec:%d,tm_sec:%d\n",last_sec,timeinfo.tm_sec);
+                    last_sec = timeinfo.tm_sec;
+                }
+                if(timeinfo.tm_min!=last_min)
+                {
+                    sprintf(buffer,"%02d",timeinfo.tm_min);
+                    dsp_single_colour_x_region(72,0,16,16,BLACK);
+                    Display_ASCII8X16(72,0,buffer,WHITE);
+                    // printf("last_min:%d,tm_min:%d\n",last_min,timeinfo.tm_min);
+                    last_min = timeinfo.tm_min;
+                }
+                if(timeinfo.tm_hour!=last_hour)
+                {
+                    sprintf(buffer,"%02d",timeinfo.tm_hour);
+                    dsp_single_colour_x_region(48,0,16,16,BLACK);
+                    Display_ASCII8X16(48,0,buffer,WHITE);
+                    // printf("last_hour:%d,tm_hour:%d\n",last_hour,timeinfo.tm_hour);
+                    last_hour = timeinfo.tm_hour;
+                }
+                if(timeinfo.tm_mday!=last_day)
+                {
+                    sprintf(buffer,"%02d",timeinfo.tm_mday);
+                    dsp_single_colour_x_region(24,0,16,16,BLACK);
+                    Display_ASCII8X16(24,0,buffer,WHITE);
+                    // printf("last_day:%d,tm_mday:%d\n",last_day,timeinfo.tm_mday);
+                    last_day = timeinfo.tm_mday;
+                }
+                if(timeinfo.tm_mon+1!=last_month)
+                {
+                    sprintf(buffer,"%02d",timeinfo.tm_mon+1);
+                    dsp_single_colour_x_region(0,0,16,16,BLACK);
+                    Display_ASCII8X16(0,0,buffer,WHITE);
+                    // printf("last_month:%d,tm_mon+1:%d\n",last_month,timeinfo.tm_mon+1);
+                    last_month = timeinfo.tm_mon+1;
+                }
+
             }
             if(i%5==0)
             {
@@ -349,8 +401,10 @@ void display_task(void * parm)
             }
         }else if(ota_start_flag==1)
         {
+            printf("DELETE display_task!\n\n");
+            vTaskDelete(NULL);
             dsp_single_colour(BLACK);
-            Display_chinese16X16(0,0,25,WHITE);Display_chinese16X16(16,0,26,WHITE);Display_chinese16X16(32,0,27,WHITE);Display_chinese16X16(48,0,28,WHITE);
+            /*Display_chinese16X16(0,0,25,WHITE);Display_chinese16X16(16,0,26,WHITE);Display_chinese16X16(32,0,27,WHITE);Display_chinese16X16(48,0,28,WHITE);
             i=0;
             while(1)
             {
@@ -365,8 +419,26 @@ void display_task(void * parm)
 
                 i++;
                 vTaskDelay(1000/portTICK_PERIOD_MS);
+            }*/
+        }/*else if(ota_start_flag==2)
+        {
+            Display_Image(0,0,128,128,boot_image);
+            while(1)
+            {
+                start_t++;
+                if(start_t>5)
+                {
+                    ota_start_flag=0;
+                    break;
+                }else
+                {
+                    ;
+                }
+                
+                vTaskDelay(1000/portTICK_PERIOD_MS);
             }
-        }
+
+        }*/
         
         if(i==99)
         {
@@ -395,9 +467,46 @@ void GPIO0_D3OutputConfig(int val)
 }
 void show_ota_picture(void)
 {
+    uint8_t i=0;
     dsp_single_colour(BLACK);
     Display_chinese16X16(0,0,25,WHITE);Display_chinese16X16(16,0,26,WHITE);Display_chinese16X16(32,0,27,WHITE);Display_chinese16X16(48,0,28,WHITE);
+    while(1)
+    {
+        if(i==4)
+        {
+            i=0;
+            Display_chinese16X16(72,0,13,BLACK);
+        }
+        else if(i==2)
+        {
+            Display_chinese16X16(72,0,13,WHITE);
+        }
 
+        i++;
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
+}
+void boot_display_task(void * parm)
+{
+    uint8_t i=0;
+    dsp_single_colour(BLACK);
+    // Display_Image(0,0,128,128,boot_image);
+    /*监测系统*/
+    Display_chinese24x24(16,16,0,WHITE);Display_chinese24x24(40,16,1,WHITE);Display_chinese24x24(64,16,2,WHITE);Display_chinese24x24(88,16,3,WHITE);
+    /*启动中...*/
+    Display_chinese16X16(32,80,29,WHITE);Display_chinese16X16(48,80,30,WHITE);Display_chinese16X16(64,80,26,WHITE);Display_chinese16X16(80,80,13,WHITE);
+    /*201627074*/
+    Display_ASCII8X16(28,108,"201627074",WHITE);
+    while(1)
+    {
+        i++;
+        if(i>6)
+        {
+            xEventGroupSetBits(boot_status_group,BOOT_BIT);
+            vTaskDelete(NULL);
+        }
+        vTaskDelay(1000/portTICK_PERIOD_MS);
+    }
 }
 void app_main()
 {
@@ -405,6 +514,8 @@ void app_main()
     uint8_t i=0;
     u8 buffer[5];
     struct tm timeinfo;
+    EventBits_t uxBits;
+    boot_status_group = xEventGroupCreate();
     // char buffer[17]="2020-04-22 21:38";
     // char strftime_buf[32];
     char adc_data[10];
@@ -426,15 +537,19 @@ void app_main()
     printf("MAIN2---------------------------------\n");
     lcd_initial();
     printf("MAIN3---------------------------------\n");
-    dsp_single_colour(BLACK);
+    // dsp_single_colour(BLACK);
     /****************************/
+    xEventGroupClearBits(boot_status_group,BOOT_BIT);
+    xTaskCreate(&boot_display_task,"boot_display_task", 1024, NULL, 8, NULL); 
+    uxBits = xEventGroupWaitBits(boot_status_group, BOOT_BIT, true, false, portMAX_DELAY); 
+    dsp_single_colour(BLACK);
     /*时间校准中…*/
     Display_chinese16X16(0,0,8,WHITE);Display_chinese16X16(16,0,9,WHITE);Display_chinese16X16(32,0,10,WHITE);Display_chinese16X16(48,0,11,WHITE);Display_chinese16X16(60,0,12,WHITE);
     Display_chinese16X16(72,0,13,WHITE);
     /*温度:*/
     Display_chinese16X16(0,16,0,WHITE);Display_chinese16X16(16,16,1,WHITE);Display_chinese16X16(32,16,2,WHITE);Display_chinese16X16(96,16,22,WHITE);
     /*湿度:*/
-    Display_chinese16X16(0,32,3,WHITE);Display_chinese16X16(16,32,1,WHITE);Display_chinese16X16(32,32,2,WHITE);Display_chinese16X16(32,16,23,WHITE);
+    Display_chinese16X16(0,32,3,WHITE);Display_chinese16X16(16,32,1,WHITE);Display_chinese16X16(32,32,2,WHITE);//Display_chinese16X16(32,16,23,WHITE);
     /*气体:*/
     Display_chinese16X16(0,48,4,WHITE);Display_chinese16X16(16,48,5,WHITE);Display_chinese16X16(32,48,2,WHITE);
     /*开关:*/
@@ -508,8 +623,8 @@ void app_main()
         switch(my_uart_event.event_type){
         case FUN_MY_OTA: 
             printf("Execute OTA!\n");
-            show_ota_picture();
             xTaskCreate(&ota_example_task,"ota_example_task",8192,NULL,6,NULL);
+            show_ota_picture();
             break;
         case FUN_REBOOT: 
             esp_restart();

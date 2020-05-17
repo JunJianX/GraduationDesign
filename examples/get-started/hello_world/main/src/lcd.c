@@ -14,6 +14,8 @@
 #include "lcd.h"
 #include "font.h"
 
+#include "driver/gpio.h"
+#include "driver/spi.h"
 
 // #define USE_LANDSCAPE
 
@@ -33,7 +35,34 @@ CS  D0 GPIO16
 
 
 *******************************************************************************/
-//?��SPI��???????????8??????
+static uint8_t oled_dc_level = 0;
+static esp_err_t oled_set_dc(uint8_t dc)
+{
+    oled_dc_level = dc;
+    return ESP_OK;
+}
+
+void SPI_WriteData(uint8_t data)
+{
+    uint32_t buf = data; // In order to improve the transmission efficiency, it is recommended that the external incoming data is (uint32_t *) type data, do not use other type data.
+    spi_trans_t trans = {0};
+    trans.mosi = &buf;
+    trans.bits.mosi = 8;
+    oled_set_dc(1);//rs=0;rs = 0 is cmd
+    spi_trans(HSPI_HOST, &trans);
+    return ESP_OK;
+}
+void  Lcd_WriteIndex(uchar Data)
+{
+		
+		// LCD_CS_CLR_0;//cs=0;
+		// LCD_RS_CLR_0;//rs=0;rs = 0 is cmd
+		oled_set_dc(0);
+		SPI_WriteData(Data); 		
+		// LCD_CS_SET_1;//cs=1;
+}
+
+/*
 void  SPI_WriteData(uchar Data)
 {
 	unsigned char i=0;
@@ -47,7 +76,7 @@ void  SPI_WriteData(uchar Data)
 		Data<<=1;
 	}
 }
-//?��???��????????8??????
+
 void  Lcd_WriteIndex(uchar Data)
 {
 		
@@ -56,6 +85,9 @@ void  Lcd_WriteIndex(uchar Data)
 		SPI_WriteData(Data); 		
 		LCD_CS_SET_1;//cs=1;
 }
+*/
+
+
 //?��???��????????8??????
 void  Lcd_WriteData(uchar Data)
 {	

@@ -4,16 +4,21 @@ static const char *TAG = "sntp_example";
 extern EventGroupHandle_t wifi_event_group;
 extern const int CONNECTED_BIT;
 int sntp_ok_flag=0;
+// int sntp_success_flag =1;//0 is failed.1 is ok.
 static void initialize_sntp(void)
 {
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
     sntp_setservername(0, "pool.ntp.org");
+    sntp_setservername(1, "pool.ntp.org");
+    sntp_setservername(2, "pool.ntp.org");
+    // sntp_setservername(1,"cn.ntp.org.cn");
     sntp_init();
 }
 
 static void obtain_time(void)
 {
+    int i = 0;
     initialize_sntp();
 
     // wait for time to be set
@@ -73,7 +78,7 @@ void sntp_example_task(void *arg)
             sntp_ok_flag=1;
             vTaskDelete(NULL);
         }
-
+     
         ESP_LOGI(TAG, "Free heap size: %d\n", esp_get_free_heap_size());
         vTaskDelay(1000 / portTICK_RATE_MS);
     }

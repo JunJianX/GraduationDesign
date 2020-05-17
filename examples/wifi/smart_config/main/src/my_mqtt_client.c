@@ -52,8 +52,11 @@ int example_subscribe(void *handle)
     int res = 0;
     // const char *fmt = "/%s/%s/user/up";
     const char *fmt = "/sys/%s/%s/thing/service/property/set";
+    const char *fmt_ntp = "/ext/ntp/%s/%s/response";
     char *topic = NULL;
+    char *topic_ntp = NULL;
     int topic_len = 0;
+    int topic_ntp_len=0;
 
     topic_len = strlen(fmt) + strlen(g_product_key) + strlen(g_device_name) + 1;
     topic = HAL_Malloc(topic_len);
@@ -71,6 +74,22 @@ int example_subscribe(void *handle)
         return -1;
     }
     
+    topic_ntp_len = strlen(fmt_ntp)+strlen(g_product_key)+strlen(g_device_name)+1;
+    topic_ntp = HAL_Malloc(topic_ntp_len);
+    if(topic_ntp==NULL)
+    {
+        EXAMPLE_TRACE("memory not enough");
+        return -1;
+    }
+    memset(topic_ntp,0,topic_ntp_len);
+    HAL_Snprintf(topic_ntp,topic_ntp_len,fmt_ntp,g_product_key,g_device_name);
+
+    res = IOT_MQTT_Subscribe(handle,topic_ntp,IOTX_MQTT_QOS0,example_message_arrive,NULL);
+    if (res < 0) {
+        EXAMPLE_TRACE("subscribe failed");
+        HAL_Free(topic_ntp);
+        return -1;
+    }
 
 
     HAL_Free(topic);
@@ -373,7 +392,7 @@ void My_mqtt_task(void /**parm*/)
     }
 
     while (1) {
-        if (0 == loop_cnt % (253)) {
+        if (0 == loop_cnt % (253*5)) {
             example_publish(pclient);
         }
         if(ota_start_flag==1)

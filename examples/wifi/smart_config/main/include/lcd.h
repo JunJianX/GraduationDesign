@@ -75,6 +75,7 @@ void Display_chinese16X16(uint x0,uint y0,uint s,uint color);
 void Display_chinese24x24(uint x0,uint y0,uint s,uint color);
 void  Display_Image(uint x0,uint y0,uint width,uint height,char *s);
 void  Draw_any_color(uint x,uint y,uint width,uint height,int color);
+void Display_Circle(int x0,int y0,uint width,uint radius,uint color);
 #endif
 
 

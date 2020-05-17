@@ -17,6 +17,7 @@
 #include "time.h"
 #include "esp_tls.h"
 #include "esp_timer.h"
+#include "esp_system.h"
 #include "esp32_compat.h"
 #include "esp_log.h"
 
@@ -572,11 +573,19 @@ int HAL_SSL_Read(uintptr_t handle, char *buf, int len, int timeout_ms)
  */
 int HAL_SSL_Write(uintptr_t handle, const char *buf, int len, int timeout_ms)
 {
-       int poll, ret;
+    int poll, ret;
     struct esp_tls *tls = (struct esp_tls *)handle;
+    static uint8_t restart_count = 0 ;
 
     if (tls == NULL) {
-        ESP_LOGE(TAG, "HAL_SSL_Write, handle == NULL");
+        restart_count++;
+        ESP_LOGE(TAG, "HAL_SSL_Write, handle == NULL,restart_count =%d",restart_count);
+        if(restart_count>=50)
+        {
+            printf("SYSTEM RESTART DUE TO ALIYUN TLS TIMEOUT\n");
+            esp_restart();
+        }
+            
         return NULL_VALUE_ERROR;
     }
 

@@ -14,7 +14,7 @@
 #include "lcd.h"
 #include "font.h"
 
-
+extern uint16_t true_color;
 // #define USE_LANDSCAPE
 
 //±¾²âÊÔ³ÌÐòÊ¹ÓÃµÄÊÇÄ£ÄâSPI½Ó¿ÚÇý¶¯
@@ -433,6 +433,39 @@ void Display_Image(uint x0,uint y0,uint width,uint height,char *s)//Display_Imag
 			color|=  (s[position])  | ( s[position+1] <<8) ;
 			// LCD_WriteData_16Bit(color);
 			PutPixel(x0+i,y0+j,color);
+		}
+	}
+}
+
+void Display_Circle(int x0,int y0,uint width,uint radius,uint color)
+{
+	//(x-a)(x-a)+(x-b)(x-b) = r*r
+	//width = 5
+	//radius = 15
+	//radius*radius ==225 
+	//(radius+width)*(radius+width) = 400
+	//what is x0 and y0 if 
+	int i=0,j=0;
+	uint16_t r2;
+	uint16_t radius2=radius*radius;
+	uint16_t radius_width2 = (radius+width)*(radius+width);
+	uint8_t x_end =  x0+radius+width;
+	uint8_t y_end = y0+radius+width;
+	
+	
+	printf("x_end:%d,y_end:%d\n",x_end,y_end);
+	for(i = x0-radius-width;i<x_end;i++)
+	{
+		for(j = y0-radius-width;j<y_end;j++)
+		{
+			r2 = (i-x0)*(i-x0)+(j-y0)*(j-y0);
+			// printf("i = %d, j = %d ,(i-x0)*(i-x0)+(j-y0)*(j-y0) = %d \n",i,j,r2);
+			// printf("r2:%d\n,radius2:%d,radius_width2:%d\n",r2,radius2,radius_width2);
+			if(r2 >radius2 && r2<radius_width2 )
+			{
+				// printf("--x:%d,y:%d--\n",i,j);
+				PutPixel(i,j,/*true_*/color);
+			}
 		}
 	}
 }

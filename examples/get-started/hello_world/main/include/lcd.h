@@ -48,8 +48,8 @@
 // #define	LCD_LED_CLR_0  	;//LCD_CTRL->BRR=LCD_LED 
 
 
-#define	LCD_CS_SET_1  	gpio_set_level(16,1) //gpio_set_level(,1) //LCD_CTRL->BSRR=LCD_CS    
-#define	LCD_RS_SET_1  	gpio_set_level(4,1) //LCD_CTRL->BSRR=LCD_RS    
+#define	LCD_CS_SET_1  	;//gpio_set_level(16,1) //gpio_set_level(,1) //LCD_CTRL->BSRR=LCD_CS    
+#define	LCD_RS_SET_1  	;//gpio_set_level(4,1) //LCD_CTRL->BSRR=LCD_RS    
 #define	LCD_SDA_SET_1  	gpio_set_level(14,1) //LCD_CTRL->BSRR=LCD_SDA    
 #define	LCD_SCL_SET_1  	gpio_set_level(12,1) //LCD_CTRL->BSRR=LCD_SCL    
 #define	LCD_RST_SET_1  	gpio_set_level(5,1)//gpio_set_level(,1) //LCD_CTRL->BSRR=LCD_RST    

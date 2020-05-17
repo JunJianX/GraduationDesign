@@ -20,12 +20,20 @@
 #include "my_delay.h"
 #include "my_gpio.h"
 #include "esp_timer.h"
-
+#include "driver/gpio.h"
+#include "driver/spi.h"
 #define uchar unsigned char
 #define u8 unsigned char
 uint16_t adc_data[20];
 extern u8 DHT11_Data_Array[6];
 extern const unsigned char wifi_image[];
+
+static const char *TAG = "spi_oled";
+static uint8_t oled_dc_level = 0;
+#define OLED_DC_GPIO     12
+#define OLED_RST_GPIO    15
+#define OLED_PIN_SEL  (1ULL<<OLED_DC_GPIO) | (1ULL<<OLED_RST_GPIO)
+
 void display()
 {
         char s_adc[20]="";
@@ -73,6 +81,30 @@ void GPIO_set_mode(uint8_t mode)
         gpio_config(&io_conf);
     }
 }
+
+static void IRAM_ATTR spi_event_callback(int event, void *arg)
+{
+    switch (event) {
+        case SPI_INIT_EVENT: {
+
+        }
+        break;
+
+        case SPI_TRANS_START_EVENT: {
+            gpio_set_level(OLED_DC_GPIO, oled_dc_level);
+        }
+        break;
+
+        case SPI_TRANS_DONE_EVENT: {
+
+        }
+        break;
+
+        case SPI_DEINIT_EVENT: {
+        }
+        break;
+    }
+}
 void app_main()
 {
 
@@ -94,6 +126,41 @@ void app_main()
 
     printf("%dMB %s flash\n", spi_flash_get_chip_size() / (1024 * 1024),
             (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+        uint8_t x = 0;
+
+    ESP_LOGI(TAG, "init gpio");
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = OLED_PIN_SEL;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 1;
+    gpio_config(&io_conf);
+
+    ESP_LOGI(TAG, "init hspi");
+    spi_config_t spi_config;
+    // Load default interface parameters
+    // CS_EN:1, MISO_EN:1, MOSI_EN:1, BYTE_TX_ORDER:1, BYTE_TX_ORDER:1, BIT_RX_ORDER:0, BIT_TX_ORDER:0, CPHA:0, CPOL:0
+    spi_config.interface.val = SPI_DEFAULT_INTERFACE;
+    // Load default interrupt enable
+    // TRANS_DONE: true, WRITE_STATUS: false, READ_STATUS: false, WRITE_BUFFER: false, READ_BUFFER: false
+    spi_config.intr_enable.val = SPI_MASTER_DEFAULT_INTR_ENABLE;
+    // Cancel hardware cs
+    spi_config.interface.cs_en = 0;
+    // MISO pin is used for DC
+    spi_config.interface.miso_en = 0;
+    // CPOL: 1, CPHA: 1
+    spi_config.interface.cpol = 1;
+    spi_config.interface.cpha = 1;
+    // Set SPI to master mode
+    // 8266 Only support half-duplex
+    spi_config.mode = SPI_MASTER_MODE;
+    // Set the SPI clock frequency division factor
+    spi_config.clk_div = SPI_10MHz_DIV;
+    // Register SPI event callback function
+    spi_config.event_cb = spi_event_callback;
+    spi_init(HSPI_HOST, &spi_config);
+
 
     // Adc_Init();
     printf("MAIN1---------------------------------\n");
@@ -103,6 +170,7 @@ void app_main()
     printf("MAIN3---------------------------------\n");
     dsp_single_colour(BLACK);
     vTaskDelay(1000/portTICK_PERIOD_MS);
+
 
     //xTaskCreate(&Read_DHT11_task,"Read_DHT11_task", 1024, NULL, 8, NULL); 
 
@@ -123,6 +191,7 @@ void app_main()
     // vTaskDelay(10000/portTICK_PERIOD_MS);
     // Dht11OutputConfig(0);
     // vTaskDelay(10000/portTICK_PERIOD_MS);
+    dsp_single_colour(BLACK);
     while (1)
     {
         // if(dht11_read_data(buffer)==0)
@@ -132,8 +201,8 @@ void app_main()
         //     printf("___{\"temperature\": %.2f, \"humidness\": %.2f}___\n\r", temp, hum);
         // }
         // Display_Image(0,0,20,10,wifi_image);
-         Display_Image(0,0,128,128,gImage_image);
-
+        //  Display_Image(0,0,128,128,gImage_image);
+        Display_ASCII8X16(0,0,"HELLO",RED);
 
             // GPIO_set_mode(1);
             // printf("Output HIGH after 10s\n");

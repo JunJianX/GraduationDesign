@@ -47,7 +47,7 @@ int mqtt_init_or_not=0;
 const int CONNECTED_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
-static const char *version = "ver 1.1";
+static const char *version = "ver 1.0";
 uint8_t ota_start_flag = 0;
 uint8_t sntp_flag =1;
 uint8_t fun_left_flag = 0;
@@ -67,6 +67,7 @@ extern parse_event_struct_t my_uart_event;
 extern int sntp_ok_flag;
 extern const unsigned char wifi_image[] ;
 extern const unsigned char aliyun_image[] ;
+// extern int sntp_success_flag;
 void smartconfig_example_task(void * parm);
 
 void clear_uart_event(void)
@@ -284,15 +285,15 @@ void display_task(void * parm)
         if(ota_start_flag==0)
         {
             time(&t);
-            if(i%2==0)//every 1 seconds flush
-            {
+            // if(i%2==0)//every 1 seconds flush
+            // {
                 if(t<3600)
                 {
                     //时间校准中…
-                    if(time_flag == 0) {Display_chinese16X16(72,0,13,BLACK);time_flag=1;}else if(time_flag == 1){Display_chinese16X16(72,0,13,WHITE);time_flag=0;}
+                    if(time_flag == 0) {Display_chinese16X16(80,0,13,BLACK);time_flag=1;}else if(time_flag == 1){Display_chinese16X16(80,0,13,WHITE);time_flag=0;}
                 }
             
-            }
+            // }
             if(i%5 == 0)
             {
                 
@@ -300,7 +301,7 @@ void display_task(void * parm)
                 {
                     humidity = (uint8_t)buffer_TH[0] + buffer_TH[1] / 10.0;
                     Temperature = buffer_TH[2] + buffer_TH[3] / 10.0;
-                    printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
+                    // printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
                 }else
                 {
                     printf("!!DHT11 Read Error!\n");
@@ -308,7 +309,7 @@ void display_task(void * parm)
 
                 if (ESP_OK == adc_read(&Gas)) {
                     // printf("ADC value is %d\n",adc_data[0]);
-                    printf("Gas is %d\n",Gas);
+                    // printf("Gas is %d\n",Gas);
                 }
 
                 /*显示湿度*/
@@ -483,12 +484,14 @@ void show_ota_picture(void)
         }
 
         i++;
-        vTaskDelay(1000/portTICK_PERIOD_MS);
+        vTaskDelay(500/portTICK_PERIOD_MS);
     }
 }
+uint16_t true_color = GREEN;
 void boot_display_task(void * parm)
 {
-    uint8_t i=0;
+    uint8_t i=0,j=0;
+    uint16_t color_array[9]= {RED,GREEN,BLUE,WHITE,0x1520,YELLOW,GRAY0,GRAY1,GRAY2};
     dsp_single_colour(BLACK);
     // Display_Image(0,0,128,128,boot_image);
     /*监测系统*/
@@ -496,17 +499,29 @@ void boot_display_task(void * parm)
     /*启动中...*/
     Display_chinese16X16(32,80,29,WHITE);Display_chinese16X16(48,80,30,WHITE);Display_chinese16X16(64,80,26,WHITE);Display_chinese16X16(80,80,13,WHITE);
     /*201627074*/
-    Display_ASCII8X16(28,108,"201627074",WHITE);
+    Display_ASCII8X16(28,96,"201627074",WHITE);
+    /*青岛理工大学*/
+    Display_chinese16X16(16,112,31,WHITE);Display_chinese16X16(32,112,32,WHITE);Display_chinese16X16(48,112,33,WHITE);Display_chinese16X16(64,112,34,WHITE);
+    Display_chinese16X16(80,112,35,WHITE);Display_chinese16X16(96,112,36,WHITE);
     while(1)
     {
         i++;
-        if(i>6)
+        true_color = color_array[i%9];
+        Display_Circle(64,54,2,10,true_color);
+        // color+=1200;
+        if(i>13)
         {
             xEventGroupSetBits(boot_status_group,BOOT_BIT);
             vTaskDelete(NULL);
         }
-        vTaskDelay(1000/portTICK_PERIOD_MS);
+        vTaskDelay(500/portTICK_PERIOD_MS);
     }
+}
+
+void SmartconfigInput(void)
+{
+	PIN_FUNC_SELECT(PERIPHS_IO_MUX_MTDO_U, 0);	// GPIO5设为IO口
+	GPIO_DIS_OUTPUT(GPIO_ID_PIN(15));
 }
 void app_main()
 {
@@ -530,6 +545,7 @@ void app_main()
     printf("%s\n",version);
     printf("/***************************/\n");
 
+    // printf("SD3 level is %d\n\n",GPIO_INPUT_GET(GPIO_ID_PIN(15)));
     /****************************/
     Adc_Init();
     printf("MAIN1---------------------------------\n");
@@ -538,14 +554,15 @@ void app_main()
     lcd_initial();
     printf("MAIN3---------------------------------\n");
     // dsp_single_colour(BLACK);
+    printf("(48-64)x(48-64)=%d\n",(48-64)*(48-64));
     /****************************/
     xEventGroupClearBits(boot_status_group,BOOT_BIT);
     xTaskCreate(&boot_display_task,"boot_display_task", 1024, NULL, 8, NULL); 
     uxBits = xEventGroupWaitBits(boot_status_group, BOOT_BIT, true, false, portMAX_DELAY); 
     dsp_single_colour(BLACK);
     /*时间校准中…*/
-    Display_chinese16X16(0,0,8,WHITE);Display_chinese16X16(16,0,9,WHITE);Display_chinese16X16(32,0,10,WHITE);Display_chinese16X16(48,0,11,WHITE);Display_chinese16X16(60,0,12,WHITE);
-    Display_chinese16X16(72,0,13,WHITE);
+    Display_chinese16X16(0,0,8,WHITE);Display_chinese16X16(16,0,9,WHITE);Display_chinese16X16(32,0,10,WHITE);Display_chinese16X16(48,0,11,WHITE);Display_chinese16X16(64,0,12,WHITE);
+    // Display_chinese16X16(72,0,13,WHITE);
     /*温度:*/
     Display_chinese16X16(0,16,0,WHITE);Display_chinese16X16(16,16,1,WHITE);Display_chinese16X16(32,16,2,WHITE);Display_chinese16X16(96,16,22,WHITE);
     /*湿度:*/

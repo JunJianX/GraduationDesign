@@ -301,7 +301,7 @@ void display_task(void * parm)
                 {
                     humidity = (uint8_t)buffer_TH[0] + buffer_TH[1] / 10.0;
                     Temperature = buffer_TH[2] + buffer_TH[3] / 10.0;
-                    // printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
+                    printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
                 }else
                 {
                     printf("!!DHT11 Read Error!\n");
@@ -332,8 +332,8 @@ void display_task(void * parm)
                 sprintf(buffer,"%.2f",Temperature);
                 Display_ASCII8X16(48,16,buffer,WHITE);
                 /*显示气体*/
-                dsp_single_colour_x_region(48,48,24,16,BLACK);
-                sprintf(buffer,"%3dppm",Gas);
+                dsp_single_colour_x_region(48,48,48,16,BLACK);
+                sprintf(buffer,"%dppm",Gas);
                 Display_ASCII8X16(48,48,buffer,WHITE);
             }
 

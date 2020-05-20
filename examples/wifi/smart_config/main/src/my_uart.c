@@ -13,7 +13,7 @@ parse_event_struct_t my_uart_event;
  parse_event_struct_t Parse(uint8_t *s)
 {
      parse_event_struct_t t={
-    .event_type = 0,.ip = "192.168.1.104",.port = 8080,.address = 0,.length = 0,.ssid="",.passwd=""};
+    .event_type = 0,.ip = "192.168.1.5",.port = 8080,.address = 0,.length = 0,.ssid="",.passwd=""};
     
     char *pforward= (char*)s,*pbehind = (char*)s,*pend = (char*)s;
     char ip[16]="";

@@ -37,6 +37,8 @@ static int binary_file_length = 0;
 /*socket id*/
 static int socket_id = -1;
 
+long unsigned int total_ota_size=0;
+int now_ota_size = 0;
 // char ip[16]="";
 // int port = 0;
 extern parse_event_struct_t my_uart_event;
@@ -112,6 +114,7 @@ bool _esp_ota_firm_parse_http(esp_ota_firm_t *ota_firm, const char *text, size_t
             ota_firm->content_len = atoi(length_str);
             ota_firm->ota_size = ota_firm->content_len;
             ota_firm->ota_offset = 0;
+            total_ota_size = ota_firm->ota_size;
             ESP_LOGI(TAG, "parse Content-Length:%d, ota_size %d", ota_firm->content_len, ota_firm->ota_size);
         }
 
@@ -341,6 +344,7 @@ void ota_example_task(void *pvParameter)
                 task_fatal_error();
             }
             binary_file_length += buff_len;
+            now_ota_size = binary_file_length;
             ESP_LOGI(TAG, "Have written image length %d", binary_file_length);
         } else if (buff_len == 0) {  /*packet over*/
             flag = false;

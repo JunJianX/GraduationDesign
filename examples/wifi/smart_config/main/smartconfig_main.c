@@ -47,7 +47,7 @@ int mqtt_init_or_not=0;
 const int CONNECTED_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
-static const char *version = "ver 1.0";
+static const char *version = "ver 1.1";
 uint8_t ota_start_flag = 0;
 uint8_t sntp_flag =1;
 uint8_t fun_left_flag = 0;
@@ -62,6 +62,8 @@ uint8_t controller=0;
 
 char *passwd=NULL;
 char *ssid=NULL;
+char *ip = NULL;
+char *port=NULL;
 // TaskHandle_t sntp_handle;
 extern parse_event_struct_t my_uart_event;
 extern int sntp_ok_flag;
@@ -468,7 +470,10 @@ void GPIO0_D3OutputConfig(int val)
 }
 void show_ota_picture(void)
 {
+    extern long unsigned int total_ota_size;
+    extern int now_ota_size;
     uint8_t i=0;
+    char buffer[5]="34%%";
     dsp_single_colour(BLACK);
     Display_chinese16X16(0,0,25,WHITE);Display_chinese16X16(16,0,26,WHITE);Display_chinese16X16(32,0,27,WHITE);Display_chinese16X16(48,0,28,WHITE);
     while(1)
@@ -477,12 +482,17 @@ void show_ota_picture(void)
         {
             i=0;
             Display_chinese16X16(72,0,13,BLACK);
+
+            // dsp_single_colour_x_region(64,0,32,16,BLACK);
+            // printf("\n\n %lu \n\n",now_ota_size*100/total_ota_size);
+            // snprintf(buffer,4,"%03lu%%",now_ota_size*100/total_ota_size);
+            // Display_ASCII8X16(64,0,buffer,WHITE);
         }
         else if(i==2)
         {
             Display_chinese16X16(72,0,13,WHITE);
         }
-
+        
         i++;
         vTaskDelay(500/portTICK_PERIOD_MS);
     }
@@ -589,11 +599,8 @@ void app_main()
    
     passwd = malloc(64+1);
     ssid = malloc(32+1);
-
     memset(passwd,0,64+1);
     memset(ssid,0,32+1);
-    
-
     if(Read_ssid_passwd(ssid,passwd)==0)
     {
         printf("Read passwd&&ssid sccucessful!!\n");
@@ -605,6 +612,25 @@ void app_main()
         printf("Read passwd&&ssid failed !!\n");
         WiFi_Init_Or_Not = 0;
     }
+    ip = malloc(16+1);
+    port = malloc(6+1);
+    memset(ip,0,16+1);
+    memset(port,0,6+1);
+    if(Read_ip_port(ip,port)==0)
+    {
+        printf("Read port&&ip sccucessful!!\n");
+        memset(my_uart_event.ip,0,16);
+        memcpy(my_uart_event.ip,ip,16);
+
+        my_uart_event.port = atoi(port);
+    }else
+    {
+        printf("!!no assign IP AND PORT.\n");
+    }
+    
+
+
+
     initialise_wifi();
     while(1)
     {
@@ -636,11 +662,11 @@ void app_main()
             mqtt_init_or_not=0;
             sntp_ok_flag=0;
         }
-   
         switch(my_uart_event.event_type){
         case FUN_MY_OTA: 
             printf("Execute OTA!\n");
             xTaskCreate(&ota_example_task,"ota_example_task",8192,NULL,6,NULL);
+            printf("show_ota_picture\n");
             show_ota_picture();
             break;
         case FUN_REBOOT: 

@@ -1,6 +1,7 @@
 #include "my_mqtt_client.h"
 
 #include <string.h>
+#include <stdlib.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -11,6 +12,7 @@
 #include "time.h"
 #include "cJSON.h"
 #include "my_uart.h"
+#include "my_tools.h"
 
 extern uint8_t aliyun_flag;
 extern uint8_t ota_start_flag;
@@ -296,6 +298,7 @@ void parse(uint16_t topic_len,const char * topic,uint16_t payload_len,const char
 {
     cJSON *items = NULL,*item =NULL,*tmp = NULL;
     items = cJSON_Parse(payload);
+    char buffer[6]="";
     if (items == NULL) {
 		// fprintf(stderr, "pasre json file fail\n");
         printf("pasre json file fail\n");
@@ -316,9 +319,6 @@ void parse(uint16_t topic_len,const char * topic,uint16_t payload_len,const char
     {
         printf("using cJson to read param1:%d\n\n",tmp->valueint);    
     }
-    
-    
-
     tmp = cJSON_GetObjectItem(item, "ip");
     if(tmp ==NULL)
     {
@@ -330,9 +330,6 @@ void parse(uint16_t topic_len,const char * topic,uint16_t payload_len,const char
         memcpy(my_uart_event.ip,tmp->valuestring,strlen(tmp->valuestring));
         printf("Read new ip is %s\n",my_uart_event.ip);
     }
-    
-    
-
     tmp = cJSON_GetObjectItem(item, "port");
     if(tmp ==NULL)
     {
@@ -343,6 +340,8 @@ void parse(uint16_t topic_len,const char * topic,uint16_t payload_len,const char
         /* code */
         my_uart_event.port = tmp->valueint;
         printf("Read new port is %d:\n",my_uart_event.port);
+        itoa(my_uart_event.port,buffer,10);
+        Save_ip_port(my_uart_event.ip,buffer);
     }
     
     

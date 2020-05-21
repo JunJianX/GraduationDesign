@@ -11,8 +11,12 @@
 #define FLASH_FACTORY_PASSWORD_ADDR 0x1F4000 //password length adress
 #define FLASH_FACTORY_SSID_ADDR     0x1F4500 //ssid length adress
 
+#define FLASH_IP_ADDR   0x1F5000
+#define FLASH_PORT_ADDR 0x1F5500
 
 void Save_ssid_passwd(char *ssid,char *passwd);
 int Read_ssid_passwd(char *ssid,char *passwd);
+void Save_ip_port(char *ip,char *port);
+int Read_ip_port(char *ip,char *port);
 
 #endif

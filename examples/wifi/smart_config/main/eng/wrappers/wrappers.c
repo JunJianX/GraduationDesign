@@ -580,7 +580,7 @@ int HAL_SSL_Write(uintptr_t handle, const char *buf, int len, int timeout_ms)
     if (tls == NULL) {
         restart_count++;
         ESP_LOGE(TAG, "HAL_SSL_Write, handle == NULL,restart_count =%d",restart_count);
-        if(restart_count>=50)
+        if(restart_count>=15)
         {
             printf("SYSTEM RESTART DUE TO ALIYUN TLS TIMEOUT\n");
             esp_restart();

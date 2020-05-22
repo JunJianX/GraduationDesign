@@ -317,6 +317,7 @@ void parse(uint16_t topic_len,const char * topic,uint16_t payload_len,const char
 		
     }else
     {
+        controller = tmp->valueint;
         printf("using cJson to read param1:%d\n\n",tmp->valueint);    
     }
     tmp = cJSON_GetObjectItem(item, "ip");

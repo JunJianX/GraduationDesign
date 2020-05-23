@@ -8,7 +8,7 @@ void Save_ssid_passwd(char *ssid,char *passwd)
     ssidlen = strlen(ssid);
     passwdlen = strlen(passwd);
 
-    spi_flash_erase_sector(FLASH_FACTORY_PASSWORD_ADDR/1000);
+    spi_flash_erase_sector(FLASH_FACTORY_PASSWORD_ADDR/4096);
     spi_flash_write(FLASH_FACTORY_PASSWORD_ADDR,(uint32_t *)&passwdlen,4);
     spi_flash_write(FLASH_FACTORY_PASSWORD_ADDR+4,(uint32_t *)passwd,passwdlen);
     spi_flash_write(FLASH_FACTORY_SSID_ADDR,(uint32_t *)&ssidlen,4);
@@ -57,23 +57,22 @@ void Save_ip_port(char *ip,char *port)
 {
     uint32_t iplen=0;
     uint32_t portlen=0;
-
+    printf("IP is :%s",ip);
+    printf("PORT is :%s",port);
     iplen = strlen(ip);
     portlen = strlen(port);
 
-    spi_flash_erase_sector(FLASH_IP_ADDR/1000);
+    spi_flash_erase_sector(FLASH_IP_ADDR/4096);
     spi_flash_write(FLASH_IP_ADDR,(uint32_t *)&iplen,4);
     spi_flash_write(FLASH_IP_ADDR+4,(uint32_t *)ip,iplen);
     spi_flash_write(FLASH_PORT_ADDR,(uint32_t *)&portlen,4);
     spi_flash_write(FLASH_PORT_ADDR+4,(uint32_t *)port,portlen);
-
+    printf("------------------------\n iplen:%ud portlen:%ud\n------------------------\n",iplen,portlen);
     printf("READ TEST!!-------------------------------------->\n");
-    // spi_flash_read(FLASH_IP_ADDR,(uint32_t *)&iplen,4);
-    // spi_flash_read(FLASH_PORT_ADDR,(uint32_t *)&portlen,4);
+    spi_flash_read(FLASH_IP_ADDR,(uint32_t *)&iplen,4);
+    spi_flash_read(FLASH_PORT_ADDR,(uint32_t *)&portlen,4);
     printf("IP is :%s",ip);
     printf("PORT is :%s",port);
-    
-
     printf("------------------------\n iplen:%ud portlen:%ud\n------------------------\n",iplen,portlen);
 }
 int Read_ip_port(char *ip,char *port)
@@ -86,8 +85,8 @@ int Read_ip_port(char *ip,char *port)
     spi_flash_read(FLASH_IP_ADDR,(uint32_t *)&iplen,4);
     spi_flash_read(FLASH_PORT_ADDR,(uint32_t *)&portlen,4);
 
-    printf("------------------------\n iplen:%ud portlen:%ud\n------------------------\n",iplen,portlen);
-    if(iplen<8||iplen>16||portlen==0||portlen>5)
+    printf("------------------------\n iplen:%u portlen:%u\n------------------------\n",iplen,portlen);
+    if(iplen<6||iplen>16||portlen>5)
     {
         ESP_LOGI("mytools.c","Read ip&port error!");
         return 1;

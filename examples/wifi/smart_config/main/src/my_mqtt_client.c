@@ -339,10 +339,12 @@ void parse(uint16_t topic_len,const char * topic,uint16_t payload_len,const char
     }else
     {
         /* code */
-        my_uart_event.port = tmp->valueint;
+        my_uart_event.port = atoi(tmp->valuestring);
+        
         printf("Read new port is %d:\n",my_uart_event.port);
-        itoa(my_uart_event.port,buffer,10);
-        Save_ip_port(my_uart_event.ip,buffer);
+        // itoa(my_uart_event.port,buffer,10);
+        Save_ip_port(my_uart_event.ip,tmp->valuestring);
+        // Save_ip_port((char *)("1.1.1.1"),(char *)("808"));
     }
     
     

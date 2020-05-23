@@ -47,7 +47,7 @@ int mqtt_init_or_not=0;
 const int CONNECTED_BIT = BIT0;
 static const int ESPTOUCH_DONE_BIT = BIT1;
 static const char *TAG = "sc";
-static const char *version = "ver 1.0";
+static const char *version = "ver 1.1";
 uint8_t ota_start_flag = 0;
 uint8_t sntp_flag =1;
 uint8_t fun_left_flag = 0;
@@ -558,13 +558,13 @@ void app_main()
     // printf("SD3 level is %d\n\n",GPIO_INPUT_GET(GPIO_ID_PIN(15)));
     /****************************/
     Adc_Init();
-    printf("MAIN1---------------------------------\n");
+    // printf("MAIN1---------------------------------\n");
     LCD_GPIO_Init();
-    printf("MAIN2---------------------------------\n");
+    // printf("MAIN2---------------------------------\n");
     lcd_initial();
-    printf("MAIN3---------------------------------\n");
+    // printf("MAIN3---------------------------------\n");
     // dsp_single_colour(BLACK);
-    printf("(48-64)x(48-64)=%d\n",(48-64)*(48-64));
+    // printf("(48-64)x(48-64)=%d\n",(48-64)*(48-64));
     /****************************/
     xEventGroupClearBits(boot_status_group,BOOT_BIT);
     xTaskCreate(&boot_display_task,"boot_display_task", 1024, NULL, 8, NULL); 
@@ -594,7 +594,7 @@ void app_main()
     xTaskCreate(&display_task,"display_task",1024, NULL, 12, NULL);
     printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
     // xTaskCreate(&test_task, "test_task", 1024, NULL, 7, NULL);
-    printf("\nStart MQTT TASK\n");
+    // printf("\nStart MQTT TASK\n");
     // xTaskCreate(&My_mqtt_task,"My_mqtt_task",4096+2048+1024,NULL,6,NULL);
    
     passwd = malloc(64+1);
@@ -619,6 +619,7 @@ void app_main()
     if(Read_ip_port(ip,port)==0)
     {
         printf("Read port&&ip sccucessful!!\n");
+        printf("IP:%s,Port:%s\n",ip,port);
         memset(my_uart_event.ip,0,16);
         memcpy(my_uart_event.ip,ip,16);
 

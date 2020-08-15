@@ -554,7 +554,7 @@ void app_main()
     printf("/***************************/\n");
     printf("%s\n",version);
     printf("/***************************/\n");
-
+    printf("Just for test!\n");
     // printf("SD3 level is %d\n\n",GPIO_INPUT_GET(GPIO_ID_PIN(15)));
     /****************************/
     Adc_Init();

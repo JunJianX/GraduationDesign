@@ -31,9 +31,13 @@
 #include "eagle_soc.h"
 #include "my_gpio.h"
 #include "my_dht11.h"
+#include "my_oled96.h"
+#include "driver/spi.h"
 // #include "test.h"
 
-
+#define OLED_DC_GPIO     12
+#define OLED_RST_GPIO    15
+#define OLED_PIN_SEL  (1ULL<<OLED_DC_GPIO) | (1ULL<<OLED_RST_GPIO)
 
 /* FreeRTOS event group to signal when we are connected & ready to make a request */
 EventGroupHandle_t wifi_event_group;
@@ -554,161 +558,164 @@ void app_main()
     printf("/***************************/\n");
     printf("%s\n",version);
     printf("/***************************/\n");
-    printf("Just for test!\n");
-    // printf("SD3 level is %d\n\n",GPIO_INPUT_GET(GPIO_ID_PIN(15)));
-    /****************************/
-    Adc_Init();
-    // printf("MAIN1---------------------------------\n");
-    LCD_GPIO_Init();
-    // printf("MAIN2---------------------------------\n");
-    lcd_initial();
-    // printf("MAIN3---------------------------------\n");
-    // dsp_single_colour(BLACK);
-    // printf("(48-64)x(48-64)=%d\n",(48-64)*(48-64));
-    /****************************/
-    xEventGroupClearBits(boot_status_group,BOOT_BIT);
-    xTaskCreate(&boot_display_task,"boot_display_task", 1024, NULL, 8, NULL); 
-    uxBits = xEventGroupWaitBits(boot_status_group, BOOT_BIT, true, false, portMAX_DELAY); 
-    dsp_single_colour(BLACK);
-    /*时间校准中…*/
-    Display_chinese16X16(0,0,8,WHITE);Display_chinese16X16(16,0,9,WHITE);Display_chinese16X16(32,0,10,WHITE);Display_chinese16X16(48,0,11,WHITE);Display_chinese16X16(64,0,12,WHITE);
-    // Display_chinese16X16(72,0,13,WHITE);
-    /*温度:*/
-    Display_chinese16X16(0,16,0,WHITE);Display_chinese16X16(16,16,1,WHITE);Display_chinese16X16(32,16,2,WHITE);Display_chinese16X16(96,16,22,WHITE);
-    /*湿度:*/
-    Display_chinese16X16(0,32,3,WHITE);Display_chinese16X16(16,32,1,WHITE);Display_chinese16X16(32,32,2,WHITE);//Display_chinese16X16(32,16,23,WHITE);
-    /*气体:*/
-    Display_chinese16X16(0,48,4,WHITE);Display_chinese16X16(16,48,5,WHITE);Display_chinese16X16(32,48,2,WHITE);
-    /*开关:*/
-    Display_chinese16X16(0,64,6,WHITE);Display_chinese16X16(16,64,7,WHITE);Display_chinese16X16(32,64,2,WHITE);
-    /*版本*/
-    Display_chinese16X16(0,80,23,WHITE);Display_chinese16X16(16,80,24,WHITE);Display_chinese16X16(32,80,2,WHITE);Display_ASCII8X16(48,80,version,WHITE);
-     
+
+    gpio_config_t io_conf;
+    io_conf.intr_type = GPIO_INTR_DISABLE;
+    io_conf.mode = GPIO_MODE_OUTPUT;
+    io_conf.pin_bit_mask = OLED_PIN_SEL;
+    io_conf.pull_down_en = 0;
+    io_conf.pull_up_en = 1;
+    gpio_config(&io_conf);
+    spi_config_t spi_config;
+    spi_config.interface.val = SPI_DEFAULT_INTERFACE;
+    spi_config.intr_enable.val = SPI_MASTER_DEFAULT_INTR_ENABLE;
+    spi_config.interface.cs_en = 0;
+    spi_config.interface.miso_en = 0;
+    spi_config.interface.cpol = 1;
+    spi_config.interface.cpha = 1;
+    spi_config.mode = SPI_MASTER_MODE;
+    spi_config.clk_div = SPI_20MHz_DIV;
+    spi_config.event_cb = NULL;
+    spi_init(HSPI_HOST, &spi_config);
+    LCD_Init();
     
-    vTaskDelay(1000/portTICK_PERIOD_MS);
-    ets_delay_us(1000000);
+    // vTaskDelay(1000/portTICK_PERIOD_MS);
+    // ets_delay_us(1000000);
     my_uart_init();
-    //////////
-    printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
+    printf("-------------------- heap:%u --------------------------\r\n",esp_get_free_heap_size());
     xTaskCreate(&uart_event_task,"uart_event_task", 1024, NULL, 8, NULL); 
-    xTaskCreate(&display_task,"display_task",1024, NULL, 12, NULL);
+    // xTaskCreate(&display_task,"display_task",1024, NULL, 12, NULL);
     printf("-------------------- heap:%u --------------------------\r\n", esp_get_free_heap_size());
+
+    while(1)
+    {
+        printf("!!!\n");
+		LCD_Print(0, 0, (u8 *)"1234567890123467890",TYPE16X16,TYPE6X8);
+		LCD_Print(0, 16, (u8 *)"ABCDEFGHIJKLABCDEF",TYPE16X16,TYPE8X16);
+		LCD_Print(0, 32, (u8 *)"123456789012345678",TYPE16X16,TYPE6X8);
+        LCD_Print(0, 48, (u8 *)"ABCDEFGHIJKLABCDEF",TYPE16X16,TYPE8X16);
+        vTaskDelay(10/portTICK_PERIOD_MS);
+        
+		LCD_CLS();
+        Draw_BMP(32,48,nonside);
+		Draw_BMP(48,48,nonside);
+		Draw_BMP(64,48,nonside);
+        vTaskDelay(10/portTICK_PERIOD_MS);
+    }
     // xTaskCreate(&test_task, "test_task", 1024, NULL, 7, NULL);
     // printf("\nStart MQTT TASK\n");
     // xTaskCreate(&My_mqtt_task,"My_mqtt_task",4096+2048+1024,NULL,6,NULL);
    
-    passwd = malloc(64+1);
-    ssid = malloc(32+1);
-    memset(passwd,0,64+1);
-    memset(ssid,0,32+1);
-    if(Read_ssid_passwd(ssid,passwd)==0)
-    {
-        printf("Read passwd&&ssid sccucessful!!\n");
-        WiFi_Init_Or_Not =1;
+    // passwd = malloc(64+1);
+    // ssid = malloc(32+1);
+    // memset(passwd,0,64+1);
+    // memset(ssid,0,32+1);
+    // if(Read_ssid_passwd(ssid,passwd)==0)
+    // {
+    //     printf("Read passwd&&ssid sccucessful!!\n");
+    //     WiFi_Init_Or_Not =1;
 
-    }
-    else
-    {
-        printf("Read passwd&&ssid failed !!\n");
-        WiFi_Init_Or_Not = 0;
-    }
-    ip = malloc(16+1);
-    port = malloc(6+1);
-    memset(ip,0,16+1);
-    memset(port,0,6+1);
-    if(Read_ip_port(ip,port)==0)
-    {
-        printf("Read port&&ip sccucessful!!\n");
-        printf("IP:%s,Port:%s\n",ip,port);
-        memset(my_uart_event.ip,0,16);
-        memcpy(my_uart_event.ip,ip,16);
+    // }
+    // else
+    // {
+    //     printf("Read passwd&&ssid failed !!\n");
+    //     WiFi_Init_Or_Not = 0;
+    // }
+    // ip = malloc(16+1);
+    // port = malloc(6+1);
+    // memset(ip,0,16+1);
+    // memset(port,0,6+1);
+    // if(Read_ip_port(ip,port)==0)
+    // {
+    //     printf("Read port&&ip sccucessful!!\n");
+    //     printf("IP:%s,Port:%s\n",ip,port);
+    //     memset(my_uart_event.ip,0,16);
+    //     memcpy(my_uart_event.ip,ip,16);
 
-        my_uart_event.port = atoi(port);
-    }else
-    {
-        printf("!!no assign IP AND PORT.\n");
-    }
+    //     my_uart_event.port = atoi(port);
+    // }else
+    // {
+    //     printf("!!no assign IP AND PORT.\n");
+    // }
     
 
 
 
-    initialise_wifi();
-    while(1)
-    {
-        if(net_flag==1&&net_flag!=net_flag_last)
-        {
-            Display_Image(0,96,50,30,wifi_image);
-        }else if(net_flag == 0&&net_flag!=net_flag_last)
-        {
-            dsp_single_colour_x_region(0,96,50,30,BLACK);
-        }
-        if(aliyun_flag==1&&aliyun_flag_last!=aliyun_flag)
-        {
-            Display_Image(50,96,54,30,aliyun_image);
-        }else if(aliyun_flag == 0&&aliyun_flag_last!=aliyun_flag)
-        {
-            dsp_single_colour_x_region(50,96,54,30,BLACK);
-        }
-        aliyun_flag_last = aliyun_flag;
-        net_flag_last = net_flag;
+    // initialise_wifi();
+    // while(1)
+    // {
+    //     if(net_flag==1&&net_flag!=net_flag_last)
+    //     {
+    //         Display_Image(0,96,50,30,wifi_image);
+    //     }else if(net_flag == 0&&net_flag!=net_flag_last)
+    //     {
+    //         dsp_single_colour_x_region(0,96,50,30,BLACK);
+    //     }
+    //     if(aliyun_flag==1&&aliyun_flag_last!=aliyun_flag)
+    //     {
+    //         Display_Image(50,96,54,30,aliyun_image);
+    //     }else if(aliyun_flag == 0&&aliyun_flag_last!=aliyun_flag)
+    //     {
+    //         dsp_single_colour_x_region(50,96,54,30,BLACK);
+    //     }
+    //     aliyun_flag_last = aliyun_flag;
+    //     net_flag_last = net_flag;
 
-        if(controller==0)
-            GPIO0_D3OutputConfig(0);
-        else if(controller==1)
-            GPIO0_D3OutputConfig(1);
+    //     if(controller==0)
+    //         GPIO0_D3OutputConfig(0);
+    //     else if(controller==1)
+    //         GPIO0_D3OutputConfig(1);
         
-        if(mqtt_init_or_not==1&&sntp_ok_flag==1)
-        {
-            xTaskCreate(&My_mqtt_task,"My_mqtt_task",8192,NULL,8,NULL);
-            mqtt_init_or_not=0;
-            sntp_ok_flag=0;
-        }
-        switch(my_uart_event.event_type){
-        case FUN_MY_OTA: 
-            printf("Execute OTA!\n");
-            xTaskCreate(&ota_example_task,"ota_example_task",8192,NULL,6,NULL);
-            printf("show_ota_picture\n");
-            show_ota_picture();
-            break;
-        case FUN_REBOOT: 
-            esp_restart();
-            break;
-        case FUN_LEFT: 
-            fun_left_flag=1;
-            break;
-        case FUN_RIGHT:
-            fun_left_flag=1;
-            break;
-        case FUN_SET_SSID_PASSED:
-            break;
-        case FUN_GET_TIME:
-            time(&t);
-            printf("\nThe time is %ld \n",t);
-            break;
+    //     if(mqtt_init_or_not==1&&sntp_ok_flag==1)
+    //     {
+    //         xTaskCreate(&My_mqtt_task,"My_mqtt_task",8192,NULL,8,NULL);
+    //         mqtt_init_or_not=0;
+    //         sntp_ok_flag=0;
+    //     }
+    //     switch(my_uart_event.event_type){
+    //     case FUN_MY_OTA: 
+    //         printf("Execute OTA!\n");
+    //         xTaskCreate(&ota_example_task,"ota_example_task",8192,NULL,6,NULL);
+    //         printf("show_ota_picture\n");
+    //         show_ota_picture();
+    //         break;
+    //     case FUN_REBOOT: 
+    //         esp_restart();
+    //         break;
+    //     case FUN_LEFT: 
+    //         fun_left_flag=1;
+    //         break;
+    //     case FUN_RIGHT:
+    //         fun_left_flag=1;
+    //         break;
+    //     case FUN_SET_SSID_PASSED:
+    //         break;
+    //     case FUN_GET_TIME:
+    //         time(&t);
+    //         printf("\nThe time is %ld \n",t);
+    //         break;
             
-        default :
-            break;
-        }
-        /**/
-        i++;
-        // if(i%11==0)//every 5 seconds flush
-        // // {
-        //    if(dht11_read_data(buffer)==0)
-        //     {
-        //         humidity = (uint8_t)buffer[0] + buffer[1] / 10.0;
-        //         Temperature = buffer[2] + buffer[3] / 10.0;
-        //         printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
-        //     }
-        // }
-        if(i%20==0)//every 5 seconds flush
-        {
-           printf("CONTROLLER is %d\n",controller);
-            i=0;
-        }
-        my_uart_event.event_type=0;
-        vTaskDelay(1000/portTICK_PERIOD_MS);
-    }
-
-
+    //     default :
+    //         break;
+    //     }
+    //     /**/
+    //     i++;
+    //     // if(i%11==0)//every 5 seconds flush
+    //     // // {
+    //     //    if(dht11_read_data(buffer)==0)
+    //     //     {
+    //     //         humidity = (uint8_t)buffer[0] + buffer[1] / 10.0;
+    //     //         Temperature = buffer[2] + buffer[3] / 10.0;
+    //     //         printf("___{\"temperature\": %.2f, \"humidness\": %02d}___\n\r", Temperature, humidity);
+    //     //     }
+    //     // }
+    //     if(i%20==0)//every 5 seconds flush
+    //     {
+    //        printf("CONTROLLER is %d\n",controller);
+    //         i=0;
+    //     }
+    //     my_uart_event.event_type=0;
+    //     vTaskDelay(1000/portTICK_PERIOD_MS);
+    // }
 }
 

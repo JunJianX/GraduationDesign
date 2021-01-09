@@ -90,23 +90,39 @@ static void start(void)
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &on_wifi_disconnect, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &on_got_ip, NULL));
+    // ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &on_wifi_disconnect, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_STADISCONNECTED, &on_wifi_disconnect, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, WIFI_EVENT_AP_STACONNECTED, &on_got_ip, NULL));
+
+    // ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
 #ifdef CONFIG_EXAMPLE_CONNECT_IPV6
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_CONNECTED, &on_wifi_connect, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_GOT_IP6, &on_got_ipv6, NULL));
 #endif    
 
     ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-    wifi_config_t wifi_config = { 0 };
+    // wifi_config_t wifi_config = { 0 };
+    wifi_config_t wifi_config = {
+        .ap = {
+            .ssid = "ESP",
+            .ssid_len = strlen("ESP"),
+            .password = "19980326",
+            .max_connection = 2,
+            .authmode = WIFI_AUTH_WPA_WPA2_PSK
+        },
+        .sta = {
+            .ssid = "ChinaNet-VXrx",
+            .password = "7v7lrygg"
+        }
+    };
 
-    strncpy((char *)&wifi_config.sta.ssid, s_connection_name, 32);
-    strncpy((char *)&wifi_config.sta.password, s_connection_passwd, 32);
+    // strncpy((char *)&wifi_config.sta.ssid, s_connection_name, 32);
+    // strncpy((char *)&wifi_config.sta.password, s_connection_passwd, 32);
 
-    ESP_LOGI(TAG, "Connecting to %s", wifi_config.sta.ssid);
-    ESP_LOGI(TAG, "Password to %s", wifi_config.sta.password);
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
+    // ESP_LOGI(TAG, "Connecting to %s", wifi_config.sta.ssid);
+    // ESP_LOGI(TAG, "Password to %s", wifi_config.sta.password);
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
     ESP_ERROR_CHECK(esp_wifi_connect());
 }

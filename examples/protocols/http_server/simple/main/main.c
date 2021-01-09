@@ -218,6 +218,7 @@ static void disconnect_handler(void* arg, esp_event_base_t event_base,
     httpd_handle_t* server = (httpd_handle_t*) arg;
     if (*server) {
         ESP_LOGI(TAG, "Stopping webserver");
+        printf("Stopping webserver\r\n");
         stop_webserver(*server);
         *server = NULL;
     }
@@ -228,7 +229,8 @@ static void connect_handler(void* arg, esp_event_base_t event_base,
 {
     httpd_handle_t* server = (httpd_handle_t*) arg;
     if (*server == NULL) {
-        ESP_LOGI(TAG, "Starting webserver");
+        // ESP_LOGI(TAG, "Starting webserver");
+        printf("Starting webserver\r\n");
         *server = start_webserver();
     }
 }
@@ -244,6 +246,8 @@ void app_main()
 
     ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &connect_handler, &server));
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, &disconnect_handler, &server));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &connect_handler, &server));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, WIFI_EVENT_AP_STADISCONNECTED, &disconnect_handler, &server));
 
     server = start_webserver();
 }

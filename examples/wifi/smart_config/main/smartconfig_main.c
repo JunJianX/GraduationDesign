@@ -192,8 +192,8 @@ static void initialise_wifi(void)
         memcpy(config.sta.ssid,ssid,(strlen(ssid)));
         memcpy(config.sta.password,passwd,(strlen(passwd)));
     
-        printf("config read is:%s\n", config.sta.ssid);
-        printf("config read is:%s\n", config.sta.password);
+        printf("config read is:%s.\n", config.sta.ssid);
+        printf("config read is:%s.\n", config.sta.password);
         ESP_ERROR_CHECK( esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
     }
     
@@ -254,6 +254,7 @@ void smartconfig_example_task(void * parm)
     ESP_ERROR_CHECK( esp_smartconfig_set_type(SC_TYPE_ESPTOUCH) );
     ESP_ERROR_CHECK( esp_smartconfig_start(sc_callback) );
     while (1) {
+        vTaskDelay(200/portTICK_PERIOD_MS);
         uxBits = xEventGroupWaitBits(wifi_event_group, CONNECTED_BIT | ESPTOUCH_DONE_BIT, true, false, portMAX_DELAY); 
         if(uxBits & CONNECTED_BIT) {
             ESP_LOGI(TAG, "WiFi Connected to ap");
@@ -509,10 +510,10 @@ void boot_display_task(void * parm)
     /*启动中...*/
     Display_chinese16X16(32,80,29,WHITE);Display_chinese16X16(48,80,30,WHITE);Display_chinese16X16(64,80,26,WHITE);Display_chinese16X16(80,80,13,WHITE);
     /*201627074*/
-    Display_ASCII8X16(28,96,"201627074",WHITE);
-    /*青岛理工大学*/
-    Display_chinese16X16(16,112,31,WHITE);Display_chinese16X16(32,112,32,WHITE);Display_chinese16X16(48,112,33,WHITE);Display_chinese16X16(64,112,34,WHITE);
-    Display_chinese16X16(80,112,35,WHITE);Display_chinese16X16(96,112,36,WHITE);
+    Display_ASCII8X16(24,96,"1986000297",WHITE);
+    /*贵州大学*/
+    Display_chinese16X16(32,112,37,WHITE);Display_chinese16X16(48,112,38,WHITE);Display_chinese16X16(64,112,35,WHITE);
+    Display_chinese16X16(80,112,36,WHITE);
     while(1)
     {
         i++;

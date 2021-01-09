@@ -437,6 +437,13 @@ void event_handle_mqtt(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg
             break;
     }
 }
+
+static int user_timestamp_reply_event_handler(const char *timestamp)
+{
+    LOGD(MOD_SOLO, "time is %s", timestamp);
+    HAL_UTC_Set(atoll(timestamp));
+    return 0;
+}
 void My_mqtt_task(void /**parm*/)
 {
     void                   *pclient = NULL;
@@ -450,6 +457,8 @@ void My_mqtt_task(void /**parm*/)
 
     IOT_RegisterCallback(ITE_IDENTITY_RESPONSE, identity_response_handle);
     IOT_RegisterCallback(ITE_STATE_EVERYTHING, everything_state_handle);
+    IOT_RegisterCallback(ITE_TIMESTAMP_REPLY, user_timestamp_reply_event_handler);
+
     // IOT_RegisterCallback(ITE_SERVICE_REQUEST, property_set_event_handle);
     // IOT_RegisterCallback(ITE_SERVICE_REQUEST, property_set_event_handle);
 
@@ -481,6 +490,7 @@ void My_mqtt_task(void /**parm*/)
         return ;
         aliyun_flag = 0;
     }
+    
 
     while (1) {
         if (0 == loop_cnt % (253*5)) {

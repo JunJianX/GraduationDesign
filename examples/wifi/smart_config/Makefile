@@ -4,6 +4,6 @@
 #
 
 PROJECT_NAME := smart_config
-IDF_PATH := /home/xu/esp/ESP8266_RTOS_SDK
+IDF_PATH := /home/xu/esp/GraduationDesign
 include $(IDF_PATH)/make/project.mk
 

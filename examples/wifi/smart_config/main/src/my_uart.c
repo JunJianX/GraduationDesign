@@ -1,5 +1,5 @@
 #include "my_uart.h"
-
+#include "my_tools.h"
 
 static const char *TAG = "uart_events";
 
@@ -10,7 +10,7 @@ static const char *TAG = "uart_events";
 extern uint8_t ota_start_flag;
 static QueueHandle_t uart0_queue;
 parse_event_struct_t my_uart_event;
- parse_event_struct_t Parse(uint8_t *s)
+ parse_event_struct_t Parse(char *s)
 {
      parse_event_struct_t t={
     .event_type = 0,.ip = "192.168.1.5",.port = 8080,.address = 0,.length = 0,.ssid="",.passwd=""};
@@ -43,7 +43,36 @@ parse_event_struct_t my_uart_event;
         printf("IP:%s,PORT:%d",t.ip,t.port);
     }
     
+    char *p = NULL;
+    if((p=strstr(s,"setwifi"))!=NULL)
+    {
+        s=p+strlen("setwifi")+1;
+        p = strchr(s,' ');
+        if(p!=NULL)
+        {
+            *p = 0;
+            memset(my_uart_event.ssid,0,32);
+            memcpy(my_uart_event.ssid,s,strlen(s));
+            s= p+1;
+            memset(my_uart_event.passwd,0,32);
+            memcpy(my_uart_event.passwd,s,strlen(s));
+            printf("%s:%d Saving ssid and passwd!\r\n",__FILE__,__LINE__);
+            printf("SSID:%s,PASSWORD:%s.\r\n",my_uart_event.ssid,my_uart_event.passwd);
+            Save_ssid_passwd(my_uart_event.ssid,my_uart_event.passwd);
+            // my_uart_event.event_type =FUN_START_CONNECT;
+            // memset(my_uart_event.ssid,0,strlen(my_uart_event.ssid)-1);
+            // memset(my_uart_event.passwd,0,strlen(my_uart_event.passwd)-1);
+            // esp_restart();
+            
 
+        }else
+        {
+            printf("SSID AND PASSWD ERROR FORMAT!\r\n");
+            // return -4;
+        }
+        
+
+    }
     return t;
 
 
@@ -69,7 +98,7 @@ void uart_event_task(void *pvParameters)
                     uart_read_bytes(EX_UART_NUM, dtmp, event.size, portMAX_DELAY);
                     ESP_LOGI(TAG, "[DATA EVT]:");
                     uart_write_bytes(EX_UART_NUM, (const char *) dtmp, event.size);
-                    my_uart_event=Parse(dtmp);
+                    my_uart_event=Parse((char *)dtmp);
                     break;
 
                 // Event of HW FIFO overflow detected

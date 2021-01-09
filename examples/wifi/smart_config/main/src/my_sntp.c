@@ -9,9 +9,12 @@ static void initialize_sntp(void)
 {
     ESP_LOGI(TAG, "Initializing SNTP");
     sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
-    sntp_setservername(1, "pool.ntp.org");
-    sntp_setservername(2, "pool.ntp.org");
+    // sntp_setservername(0, "pool.ntp.org");
+    // sntp_setservername(1, "pool.ntp.org");
+    // sntp_setservername(2, "pool.ntp.org");
+    sntp_setservername(0, "ntp.aliyun.com");
+    sntp_setservername(1, "s1b.time.edu.cn");
+    sntp_setservername(2, "time2.aliyun.com");
     // sntp_setservername(1,"cn.ntp.org.cn");
     sntp_init();
 }

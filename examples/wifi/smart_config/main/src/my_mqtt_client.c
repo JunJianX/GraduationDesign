@@ -14,14 +14,30 @@
 #include "my_uart.h"
 #include "my_tools.h"
 
+
+// #define abs(x)      
+//     do{             
+//         x>=0?x:-x;  
+//     }  while(0);
+#define ABS(x) ( (x)>0?(x):-(x) ) 
 extern uint8_t aliyun_flag;
 extern uint8_t ota_start_flag;
 extern parse_event_struct_t my_uart_event;
 
 char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1bV9YKyW1v";
 char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "KcForemK5TuiBdT1";//
-char g_device_name[IOTX_DEVICE_NAME_LEN + 1]       = "kwEQ1yKOzDvLkbrO022t";
-char g_device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "BH9sHBHxNIXlO7AAoZwmfLYOi1vbWOI9";
+char g_device_name[IOTX_DEVICE_NAME_LEN + 1]       = "SVR76nHSG7q3hLQhDp8i";
+char g_device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "00d6223c7dd881c9411d3079fd7384b9";
+// char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1bV9YKyW1v";
+// char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "KcForemK5TuiBdT1";//
+// char g_device_name[IOTX_DEVICE_NAME_LEN + 1]       = "kwEQ1yKOzDvLkbrO022t";
+// char g_device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "BH9sHBHxNIXlO7AAoZwmfLYOi1vbWOI9";
+
+// char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1bV9YKyW1v";
+// char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "KcForemK5TuiBdT1";//
+// char g_device_name[IOTX_DEVICE_NAME_LEN + 1]       = "iJMXothMSr6ZfUl53geS";
+// char g_device_secret[IOTX_DEVICE_SECRET_LEN + 1]   = "3c383a39b1981db0ec96da235dae3b8e";
+
 /*
 char g_product_key[IOTX_PRODUCT_KEY_LEN + 1]       = "a1MZxOdcBnO";
 char g_product_secret[IOTX_PRODUCT_SECRET_LEN + 1] = "h4I4dneEFp7EImTv";//
@@ -100,6 +116,9 @@ int example_subscribe(void *handle)
     HAL_Free(topic);
     return 0;
 }
+int random(int m){
+        return rand()%m;//將随机数控制在0~m-1之间
+}
 #define PAYLOAD_LEN  200
 int example_publish(void *handle)
 {
@@ -109,7 +128,24 @@ int example_publish(void *handle)
     extern uint16_t Gas;  
     extern uint8_t controller;
     time_t t;
-
+    static float ft = -10.5;
+    static int h=2,g=3;
+      ft+=3;
+      h+=2;
+      g+=4;
+    
+    if(ft>=50)
+    {
+        ft = -10.5;
+    }
+    if(h>=100)
+    {
+        h=2;
+    }
+    if(g>=200)
+    {
+        g =3;
+    }
     int             res = 0;
     // const char     *fmt = "/%s/%s/user/up";
     // /a1GPsB9z5fS/${deviceName}/user/contrl
@@ -141,7 +177,9 @@ int example_publish(void *handle)
     }
     memset(payload,0,PAYLOAD_LEN);
     // sprintf(payload,payload_fmt,Temperature,humidity,Gas);
-    sprintf(payload,payload_fmt,t,Temperature,humidity,Gas,controller);
+    // sprintf(payload,payload_fmt,t,Temperature,humidity,Gas,controller);
+    // srand((t%10000));
+    sprintf(payload,payload_fmt,t,ft,h,g,controller);
     printf("\n%s\n",payload);
 
     printf("Publish payload:\n");
@@ -438,12 +476,12 @@ void event_handle_mqtt(void *pcontext, void *pclient, iotx_mqtt_event_msg_pt msg
     }
 }
 
-static int user_timestamp_reply_event_handler(const char *timestamp)
-{
-    LOGD(MOD_SOLO, "time is %s", timestamp);
-    HAL_UTC_Set(atoll(timestamp));
-    return 0;
-}
+// static int user_timestamp_reply_event_handler(const char *timestamp)
+// {
+//     LOGD(MOD_SOLO, "time is %s", timestamp);
+//     HAL_UTC_Set(atoll(timestamp));
+//     return 0;
+// }
 void My_mqtt_task(void /**parm*/)
 {
     void                   *pclient = NULL;
@@ -457,7 +495,7 @@ void My_mqtt_task(void /**parm*/)
 
     IOT_RegisterCallback(ITE_IDENTITY_RESPONSE, identity_response_handle);
     IOT_RegisterCallback(ITE_STATE_EVERYTHING, everything_state_handle);
-    IOT_RegisterCallback(ITE_TIMESTAMP_REPLY, user_timestamp_reply_event_handler);
+    // IOT_RegisterCallback(ITE_TIMESTAMP_REPLY, user_timestamp_reply_event_handler);
 
     // IOT_RegisterCallback(ITE_SERVICE_REQUEST, property_set_event_handle);
     // IOT_RegisterCallback(ITE_SERVICE_REQUEST, property_set_event_handle);
@@ -490,10 +528,10 @@ void My_mqtt_task(void /**parm*/)
         return ;
         aliyun_flag = 0;
     }
-    
-
+    //250--60s
+    //100--20s
     while (1) {
-        if (0 == loop_cnt % (253*5)) {
+        if (0 == loop_cnt % (100)) {
             example_publish(pclient);
         }
         if(ota_start_flag==1)
